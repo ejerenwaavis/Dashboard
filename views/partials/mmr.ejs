@@ -1,0 +1,122 @@
+<section id="mmrForm">
+    <div class="container-fluid px-0">
+        <div class="d-flex justify-content-between align-items-end">
+            <div class="">
+                <h6 class="placard-title text-mute col">MMRs'</h6>
+            </div>
+            <div class="py-2">
+                <button class="btn btn-sm btn-danger">Cancel</button>
+            </div>
+
+        </div>
+    </div>
+    <div class="placard p-5 text-center  rounded shadow">
+
+        <h4 class="form-heading mb-3">MMR - <%= ((new Date()).getMonth()+1) %>/<%= ((new Date()).getFullYear()) %>
+        </h4>
+
+        <div id="vehicle-select" class="mb-3">
+            <div class="row row-cols-2 row-cols-lg-5 g-2 g-lg-3">
+                <div class="col">
+                    <button class="p-3 px-4 w-100 btn btn-outline-success">457868
+                        <span><i class="fas fa-check-circle "></i></span>
+                    </button>
+                   
+                </div>
+                <div class="col">
+                    <button class="p-3 w-100 px-4 btn btn-outline-danger">45738
+                        <span><i class="fas fa-times-circle "></i></span>
+                    </button>
+                </div>
+                <div class="col">
+                    <button class="p-3 w-100 px-4 btn btn-outline-danger">45738
+                        <span><i class="fas fa-times-circle "></i></span>
+                    </button>
+                </div>
+                <div class="col">
+                    <button class="p-3 w-100 px-4 btn btn-outline-danger">45738
+                        <span><i class="fas fa-times-circle "></i></span>
+                    </button>
+                </div>
+                <div class="col">
+                    <button class="p-3 w-100 px-4 btn btn-outline-danger">45738
+                        <span><i class="fas fa-times-circle "></i></span>
+                    </button>
+                </div>
+                
+            </div>
+        </div>
+
+        <div id="mmr-creation" class="mt-4">
+            <div class="card">
+                <h4 class="card-header">
+                    4589656
+                </h4>
+                <div class="card-body">
+                    <div class="mb-3 ">
+                        <label for="mileage" class="form-label">Enter Current Milleage</label>
+                        <input type="number" class="form-control text-center" id="exampleFormControlInput1"
+                            placeholder="125457">
+                    </div>
+                    <div class="">
+                        <div class="form-check d-flex justify-content-center">
+                            <input class="form-check-input me-1" type="checkbox" value="" id="flexCheckChecked" checked>
+                            <label class="form-check-label" onclick="handleMMRMaaintenace(this)" for="flexCheckChecked">
+                                Maintainance
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 row-cols-1 g-3">
+                        <div class="col mb-2">
+                            <input type="date" class="form-control" name="mdate-1"/> 
+                        </div>
+                        <div class="col input-group mb-2">
+                            <input type="text" class="form-control" placeholder="brief description" aria-label="brief description"
+                                aria-describedby="brief description">
+                            <button class="btn btn-outline-secondary" type="button" id="button-addon2">+</button>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-9 pe-0">
+                            <button type="button" class="w-100 btn btn-primary">Save Report</button>
+                        </div>
+                        <div class="col-3">
+                            <button type="button" class="btn btn-danger w-100"> X </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-center align-items-end">
+            <div class="py-5">
+                <button class="btn btn-sm btn-primary" onclick="">Start MMR Creation</button>
+            </div>
+
+        </div>
+
+        <!-- <form id="add-vehicle-form">
+            <div class="container-fluid px-0">
+                <div class="row align-items-center g-3">
+
+                </div>
+                <div class="d-flex my-2 row g-0">
+                    <div class="w-80 d-flex" id="submit-button-div">
+                        <div class="flex-fill pe-2">
+                            <a role="submit" id="add-vehicle-form-submit" onclick="submitAddVehicleForm()" class="btn w-100 btn-primary ">ADD New Vehicle</a>
+                        </div>
+                        <div class="flex-fill pe-2 d-none" id="add-vehicle-form-confirm-div">
+                            <a role="submit" id="add-vehicle-form-confirm" onclick="forceAddVehicle(this)" class="btn w-100 btn-outline-warning">Ignore Warnings</a>
+                        </div>
+                    </div>
+                    <div class="w-20">
+                        <a id="add-vehicle-form-cancel" class="btn w-100 btn-danger">Cancel</a>
+                    </div>
+                </div>
+            </div>
+        </form> -->
+    </div>
+    <script src="../js/mmr.js"></script>
+</section>

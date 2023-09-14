@@ -1,0 +1,87 @@
+<section id="dailySchedule">
+    <div class="container-fluid px-0">
+        <div class="d-flex justify-content-between align-items-end">
+            <div class="">
+                <h6 class="placard-title text-mute col">Daily Schedule</h6>
+            </div>
+            <div class="py-2">
+                <button onclick="prepareDailyScheduleForm()" class="btn btn-sm btn-secondary">Refresh List <i
+                        class="fas fa-sync-alt"></i></button>
+                <!-- <button class="btn disabled btn-sm btn-secondary">Add Employee <i class="fas fa-user-plus"></i></button> -->
+            </div>
+
+        </div>
+    </div>
+    <div class="placard p-3 rounded shadow">
+
+        <div id="daily-schedule-error-div" class="alert d-none alert-dismissible fade" role="alert">
+                <span class="d-block">
+                    <ul id="daily-schedule-error-messages">
+                    </ul>
+                </span>
+                <button type="button" class="btn-close" onclick="closeAlert(this)" aria-label="Close"></button>
+        </div>
+
+        <div class="table-responsive my-3">
+            <div class="container-fluid d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 id="daily-schedule-date"><%= (new Date()).toDateString("en-US") %></h1>
+                </div>
+                <div class="align-middle">
+                    <div class="form-check form-switch ms-1 pb-3 ">
+                        <input class=" form-check-input" checked type="checkbox" id="confirm-schedule" name="confirm-schedule" onclick="handleConfirmSave(this)"
+                            aria-expanded="true" aria-controls="confirm-schedule">
+                        <label class="form-check-label" for="confirm-schedule-save"> <span id="confirm-schedule-save" class="fw-bold">
+                                Confirm </span> | <span id="schedule-draft-save" class="fw-light"> Draft </span></label>
+                    </div>
+                </div>
+            </div>
+            <table id="" class="table table-hover overflow-hidden">
+                <thead class="fw-bold">
+                    <td>#</td>
+                    <td>Work Area</td>
+                    <td>Full Name</td>
+                    <!-- <td>FedEx ID</td> -->
+                    <td>Shift</td>
+                    <td>Phone</td>
+                </thead>
+                <tbody id="daily-schedule-tbody">
+                    <form id="daily-schedule-form" name="daily-schedule-form">
+                        <tr class="" id="">
+                            <td>1</td>
+                            <td>Work Area</td>
+                            <td>
+                                <select class="form-select" disabled name="-driver-id" id="">
+                                    <option value="8658061">Driver Name</option>
+                                </select>
+                            </td>
+
+                            <td>
+                                <select class="form-select" disabled name="0302-shift" id="">
+                                    <option value="OFF">OFF</option>
+                                    <option value="FD">Full Day</option>
+                                    <option value="HD">Half Day</option>
+                                    <option value="PTO">PTO</option>
+                                </select>
+                            </td>
+                            <td><a href="**">000000000</a></td>
+                        </tr>
+                    </form>
+                    
+                </tbody>
+                <!-- <tfoot class="border-top-warning"> -->
+                    <tr>
+                        <td colspan="5" class="">
+                            <div class="row">
+                                    <div class="col-11"><button onclick="submitDailyScheduleForm()" class="btn w-100 btn-primary">Confirm  Schedule</button> </div>
+                                    <div class="col-1"> <button onclick="addDailyScheduleEntry()" class="btn w-100 btn-outline-warning"> +
+                                    </button></div>
+                            </div>
+                        </td>
+                    </tr>
+                <!-- </tfoot> -->
+            </table>
+            <div id="daily-schedule-load-error"> </div>
+        </div>
+    </div>
+</section>

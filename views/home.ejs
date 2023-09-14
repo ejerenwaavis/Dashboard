@@ -1,0 +1,155 @@
+<%- include("partials/header.ejs")%>
+
+
+  <main class="form-signin">
+    <form id="fileUpload" action="<%= body.domain %>/fileUpload" method="post" enctype="multipart/form-data">
+      
+      <% if(body.error){ %>
+        <% if(body.error !="Incorrect password." ){ %>
+          <div class="d-block">
+            <div class="row">
+              <div class=""> </div>
+      
+      
+              <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center" role="alert">
+                <div class="d-block ps-4">
+                  <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      
+                  <!-- <p class="row text-center">Summary</p> -->
+                  <p class="row ">
+                    <%= body.error %>
+                  </p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            </div>
+          </div>
+          <% } %>
+            <% } %>
+      
+      <!-- <img class="mb-4" src="/docs/5.0/assets/brand/bootstrap-logo.svg" alt="" width="72" height="57"> -->
+      <h1 class="h3 mb-1 fw-normal">Upload Eli.CSV</h1>
+      <p><small>upload the exported manifest <i class="fas fa-question"></i> </small></p>
+
+      <div class="pb-3 mb-3 pt-3">
+        <p class=" fw-bold mb-1 pb-0">Select stops to extract</p>
+        <div class="d-inline-block me-2">
+          <input class="form-check-input" type="checkbox" name="loaded" value=true id="loaded" checked>
+          <label class="form-check-label" for="loaded">
+            Scanned
+          </label>
+        </div>
+        <div class=" d-inline-block me-2">
+          <input class="form-check-input" type="checkbox" name="attempted" value=true id="attempted">
+          <label class="form-check-label" for="attempted">
+            Attempts
+          </label>
+        </div>
+        <div class=" d-inline-block me-2">
+          <input class="form-check-input" type="checkbox" name="delivered" value=true id="delivered">
+          <label class="form-check-label" for="delivered">
+            Delivered
+          </label>
+        </div>
+      </div>
+
+
+      <div class="pb-5">
+        <p class=" fw-bold mb-1 pb-0">Extract for</p>
+        <div class="d-inline-block me-2">
+          <input class="form-check-input" type="radio" name="extractFor" value="roadWarrior" id="export1" checked>
+          <label class="form-check-label" for="export1">
+            R-Warrior
+          </label>
+        </div>
+        <div class="d-inline-block me-2">
+          <input class="form-check-input" type="radio" name="extractFor" value="route4me" id="export2">
+          <label class="form-check-label" for="export2">
+            Route 4 Me
+          </label>
+        </div>
+        <div class="d-none me-2">
+          <input class="form-check-input" type="radio" name="extractFor" value="print" id="export3">
+          <label class="form-check-label" for="export3">
+            Printing
+          </label>
+        </div>
+      </div>
+
+      <label for="inputEmail" class="visually-hidden">Choose File</label>
+      <div class="form-group mb-3">
+        <input type="file" id="elicsv" name="elicsv" class="form-control" placeholder="elicsv" required autofocus>
+      </div>
+      <button class="w-100 btn btn-lg btn-primary" type="submit">Upload <i class="fas fa-file-upload"></i></button>
+      <p class="mt-5 mb-3 text-muted"><strong>&copy; RouteAssistant</strong> by ACED Devops 2020 | Triumph Courier
+        Services</p>
+      </p>
+
+
+    </form>
+
+    <!-- Button trigger modal -->
+    <button type="button" id="modalStart" class="d-none btn btn-primary" data-bs-toggle="modal" data-bs-target="#notice">
+      Launch Notice
+    </button>
+
+    <!-- Modal -->
+    <div class="modal fade" id="notice" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+      aria-labelledby="staticBackdropLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+          <div class="py-3 border border-bottom">
+            <h1 class="modal-title fs-5" id="staticBackdropLabel">Important Information!</h1>
+            <!-- <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
+          </div>
+          <div class="modal-body py-4">
+            Before continuing confirm that you have reported all <b>Walmart</b>, <b>Food Boxes</b> and <b>Payrols</b> still hanging on your MLS to a team Lead.
+            This is crucial to the success of the team.
+          </div>
+          <div class="py-3 border border-bottom">
+            <div class=" text-center">
+              <button type="button" class="btn btn-outline-accent" data-bs-dismiss="modal">I Have Reported MLS</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="fixed-bottom text-muted">
+      By using this service you agree our
+      <a class="" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false"
+        aria-controls="collapseExample">
+        Usage Liability Policy
+      </a>
+    </p>
+    <div class="collapse" id="collapseExample">
+      <div class="card card-body">
+        <p><b class="d-block">Liability Policy</b>
+          We do not take responsiblity for poorly created routes, which includes but not limited to: missing stops,
+          missing appartment numbers e.t.c, which may arise from a poorly created manifest, manually editing a manifest
+          after export and so on.
+          You are hereby required/expected to carefully inspect your manifiests/road warrior routes after it is created.
+        </p>
+      </div>
+    </div>
+  </main>
+
+
+
+
+  <!-- JavaScript Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0"
+    crossorigin="anonymous"></script>
+  <!-- jQuery -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+  <script>
+      window.onload = (event) => {
+        $("#modalStart").click();
+      };
+  </script>
+
+  </body>
+
+  </html>

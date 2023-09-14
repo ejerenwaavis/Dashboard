@@ -1,0 +1,139 @@
+<%- include("partials/header.ejs")%>
+
+
+  <main class="form-signin">
+    <form id="brandsFileUpload" action="<%= body.domain %>/brandsFileUpload" method="post"
+      enctype="multipart/form-data">
+
+      <% if(body.error){%>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <!-- <strong>Holy guacamole!</strong>  -->
+          <%= body.error%>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <%}%>
+      
+      <% if(reportSummary){ %>
+        <div class="alert alert-secondary alert-dismissible fade show d-flex align-items-center" role="alert">
+          <div class="d-block ps-4">
+            <i class="fa fa-info-circle" aria-hidden="true"></i>
+      
+            <!-- <p class="row text-center">Summary</p> -->
+              <p class="row "> 
+                <!-- <strong>Line: <%= reportSummary %></strong> -->
+                Total Records Read: <%= reportSummary.totalRead %>, Added/Modified : <a href="" data-bs-toggle="modal" data-bs-target="#reportModal"><%= reportSummary.totalBrands %></a>
+              </p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="`Label" aria-hidden="true">
+
+          <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <p class="modal-title fs-2" id="reportModalLabel">Detailed Upload Report</p>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p> <strong> New Brands </strong></p>
+                <% report.forEach(item => { %>
+                  <% if(item.action != '~ New Prefix'){%>
+                  <p><%= item.brand %> : [<%= item.tracking %>] </p>
+                  <%}%>
+                <% }) %>
+
+                <p class="mt-3"> <strong> Modifications </strong></p>
+                <% report.forEach(item=> { %>
+                  <% if(item.action === '~ New Prefix' ){%>
+                    <p>
+                      <%= item.brand %> : [<%= item.tracking %>]
+                    </p>
+                  <%}%>
+                <% }) %>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <% } %>
+        
+      <!-- <dl class="row">
+        <% if((updates)? (updates.length > 0) : false){%>
+          <dt class="col-sm-3 ">Updates</dt>
+          <dd class="col-sm-9 mb-4">
+            <ul class="list-unstyled">
+              <% updates.forEach(brand=> { %>
+                <li>
+                  <%= brand %>
+                </li>
+                <% }) %>
+            </ul>
+          </dd>
+        <%}%>
+        <% if((newBrands)? (newBrands.length > 0) : false){%>
+          <dt class="col-sm-3 ">New Brands Added</dt>
+          <dd class="col-sm-9 mb-4">
+            <ul class="list-unstyled">
+              <% newBrands.forEach(brand=> { %>
+                <li>
+                  <%= brand %>
+                </li>
+                <% }) %>
+            </ul>
+          </dd>
+          <%}%>
+      </dl> -->
+      
+
+      <!-- <img class="mb-4" src="/docs/5.0/assets/brand/bootstrap-logo.svg" alt="" width="72" height="57"> -->
+      <h1 class="h3 mb-1 fw-normal">Brand Capture</h1>
+      <p><small>Upload the LOAD.XLSX file gotten from Dispactch <i class="fas fa-question"></i> </small></p>
+
+
+
+      <label for="inputEmail" class="visually-hidden">Choose File</label>
+      <div class="form-group mb-3">
+        <input type="file" id="loadXLS" name="loadXLS" class="form-control" placeholder="loadXLS" required autofocus>
+      </div>
+      <button class="w-100 btn btn-lg btn-primary" type="submit">Upload <i class="fas fa-file-upload"></i></button>
+      <p class="mt-5 mb-3 text-muted"><strong>&copy; RouteAssistant</strong> by ACED Devops 2020 | Triumph Courier
+        Services
+      </p>
+
+    </form>
+
+    <p class="fixed-bottom text-muted">
+      By using this service you agree to have read and undertood our
+      <a class="" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false"
+        aria-controls="collapseExample">
+        Disclaimer
+      </a>
+    </p>
+    <div class="collapse" id="collapseExample">
+      <div class="card card-body">
+        <p><b class="d-block">Disclaimer</b>
+          We do not take responsiblity for poorly registered brands which may arise from uploading a file with the wrong
+          format.
+          This is a project still in the making and is not yet available for public use. Apply Caution.
+        </p>
+      </div>
+    </div>
+  </main>
+
+
+
+
+  <!-- JavaScript Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0"
+    crossorigin="anonymous"></script>
+  <!-- jQuery -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+  </body>
+
+  </html>

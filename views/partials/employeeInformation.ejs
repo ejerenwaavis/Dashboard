@@ -1,0 +1,25 @@
+<section id="employeeInformation">
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-end">
+        <div class="">
+            <h6 class="placard-title text-mute col">EMPLOYEE INFO</h6>
+        </div>
+        <div class="py-2">
+            <button onclick="refreshEmployeeTable()" class="btn btn-sm btn-secondary">Refresh List <i class="fas fa-sync-alt"></i></button>
+            <button class="btn disabled btn-sm btn-secondary">Add Employee <i class="fas fa-user-plus"></i></button>
+        </div>
+       
+    </div>
+</div>
+<div class="placard p-3 rounded shadow">
+    <div class="table-responsive">
+        <table id="" class="table table-hover">
+            <thead><td>#</td><td>FedEx ID</td><td>Full Name</td><td>WA</td><td>Role</td><td>Email</td><td>Phone</td><td>DL Exp.</td><td>DoT Exp</td><td>Schedule</td><td>Availability</td></thead>
+            <tbody id="employee-list">
+            
+            </tbody>  
+        </table>
+        <div id="employee-list-load-error"> </div>
+    </div>
+</div>
+</section>

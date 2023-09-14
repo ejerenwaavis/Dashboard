@@ -1,0 +1,247 @@
+<section id="addEmployeeForm">
+    <div class="container-fluid px-0">
+        <div class="d-flex justify-content-between align-items-end">
+            <div class="">
+                <h6 class="placard-title text-mute col">Add Employee</h6>
+            </div>
+            <div class="py-2">
+                <button class="btn btn-sm btn-danger">Cancel</button>
+            </div>
+
+        </div>
+    </div>
+    <div class="placard p-5  rounded shadow">
+        <form id="add-employee-form" class="form">
+            <div class="container-fluid px-0">
+                <div class="row align-items-center g-3">
+                    <div id="add-employee-form-error-div" class="alert alert-danger alert-dismissible d-none fade"
+                        role="alert">
+                        <span>
+                            <strong id="add-employee-form-error-header">Please Correct the following errors!</strong>
+                            <span class="d-block">
+                                <ul id="add-employee-form-error-messages">
+                                </ul>
+                            </span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </span>
+                    </div>
+                    <h5 class="form-heading">Fedex Info</h5>
+
+                    <div class="col col-sm-12 col-md-6 col-lg-4">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">
+                                <i class="text-danger me-1">*</i>
+                                Fedex ID
+                            </span>
+                            <input type="text" required info="FEDEX ID is required to enrol an emplyee"
+                                name="employee-FID" id="employee-FID" class="form-control"
+                                placeholder="Employee's Fedex #" aria-label="employee-FID" aria-describedby="">
+                        </div>
+                    </div>
+
+                    <div class="col col-sm-6 col-md-6 col-lg-4" id="employee-work-area-div">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">
+                                Prefered Work Area
+                            </span>
+                            <select class="form-select" info="Work Area not assigned" name="employee-work-area"
+                                id="employee-work-area" aria-label="model">
+                                <option value=null selected>WA#</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col col-sm-6 col-md-6 col-lg-4" id="employee-work-area-div">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">
+                                Role
+                            </span>
+                            <select class="form-select" onchange="handleRole(this)" info="Role not assigned" name="employee-role" id="employee-role"
+                                aria-label="model">
+                                <option value="driver" selected>Driver (Default)</option>
+                                <option value="helper" >Helper</option>
+                                <option value="manager" >Manager</option>
+                                <option value="manager" >Admin</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h5 class="form-heading">Personal Info</h5>
+
+                    <div class="col col-sm-6 col-md-6 col-lg-4">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">
+                                <i class="text-danger me-1">*</i>
+                                First Name
+                            </span>
+                            <input type="text" required info="Employee's first name is required"
+                                name="employee-first-name" id="employee-first-name" class="form-control"
+                                placeholder="Johnson" aria-label="employee-first-name" aria-describedby="">
+                        </div>
+                    </div>
+
+                    <div class="col col-sm-6 col-md-6 col-lg-4">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">
+                                <i class="text-danger me-1">*</i>
+                                Last Name
+                            </span>
+                            <input type="text" required info="Employee's last name is required"
+                                name="employee-last-name" id="employee-last-name" class="form-control"
+                                placeholder="Madison" aria-label="employee-last-name" aria-describedby="">
+                        </div>
+                    </div>
+
+                    <div class="col col-sm-6 col-md-6 col-lg-4">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">
+                                Phone
+                            </span>
+                            <input type="tel" info="Employee's Phone Number not provided" name="employee-phone"
+                                id="employee-phone" class="form-control" placeholder="336-111-2222"
+                                aria-label="employee-phone" aria-describedby="">
+                        </div>
+                    </div>
+                    <div class="col col-sm-6 col-md-6 col-lg-4">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">
+                                Email
+                            </span>
+                            <input type="email" info="Employee's Email not provided" name="employee-email"
+                                id="employee-email" class="form-control" placeholder="johnsonmadison@mail.com"
+                                aria-label="employee-email" aria-describedby="">
+                        </div>
+                    </div>
+
+
+
+
+                    <!-- DoT & Licence -->
+                    <h5 class="form-heading">Licence / DoT</h5>
+                    <div class="col col-sm-12 col-md-6 col-lg-4">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">Lic. Exp.</span>
+                            <input type="date" class="form-control" info="Drivers Licence Exp. Date not provided"
+                                id="drivers-licence-expiry-date" name="drivers-licence-expiry-date" aria-label="LED" id
+                                aria-describedby="">
+                        </div>
+                    </div>
+
+                    <div class="col col-sm-12 col-md-6 col-lg-6">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">DoT Medical Exp.</span>
+                            <input type="date" class="form-control" info="DoT Medicla Exp. Date not stated "
+                                id="dot-medical-expiry-date" name="dot-medical-expiry-date"
+                                aria-label="dot-medical-expiry-date" aria-describedby="">
+                        </div>
+                    </div>
+
+
+                    <!-- FEDEX -->
+
+<!-- 
+                    <div class="col col-sm-6 col-md-6 col-lg-3">
+                        <div class="input-group mb-3">
+                            <select class="form-select" info="No Vehicle Assigned" name="employee-vehicle"
+                                id="employee-vehicle" aria-label="Assined Vehicle">
+                                <option value="null" selected>Assigned Vehicle</option>
+                            </select>
+                        </div>
+                    </div> -->
+
+                    <h5 class="form-heading">Schedule & Availability</h5>
+
+                    <div class="col col-sm-12 col-md-6 col-lg-6 mb-0">
+                        <div class="form-check form-switch ms-1 pb-3 ">
+                            <input class=" form-check-input" checked type="checkbox" id="job-type" name="job-type"
+                                onclick="handleJobType(this)" aria-expanded="true" aria-controls="job-type">
+                            <label class="form-check-label" for="job-type"> <span id="full-time" class="fw-bold">
+                                    Fulltime </span> | <span id="part-time" class="fw-light"> Part-Time </span></label>
+                        </div>
+
+                        <div class=" d-flex justify-content-start " id="available-days">
+                            <div class="form-check  pe-3">
+                                <input class=" form-check-input  " type="checkbox" id="monday"
+                                    name="monday">
+                                <label class="form-check-label" for="monday">
+                                    Mon
+                                </label>
+                            </div>
+                            <div class="form-check pe-3">
+                                <input class=" form-check-input " type="checkbox" id="tuesday"
+                                    name="tuesday">
+                                <label class="form-check-label" for="tuesday">
+                                    Tue
+                                </label>
+                            </div>
+                            <div class="form-check pe-3">
+                                <input class=" form-check-input " type="checkbox" id="wednesday"
+                                    name="wednesday">
+                                <label class="form-check-label" for="wednesday">
+                                    Wed
+                                </label>
+                            </div>
+                            <div class="form-check pe-3">
+                                <input class=" form-check-input " type="checkbox" id="thursday"
+                                    name="thursday">
+                                <label class="form-check-label" for="thursday">
+                                    Thur
+                                </label>
+                            </div>
+                            <div class="form-check pe-3">
+                                <input class=" form-check-input  " type="checkbox" id="friday"
+                                    name="friday">
+                                <label class="form-check-label" for="friday">
+                                    Fri
+                                </label>
+                            </div>
+                            <div class="form-check pe-3">
+                                <input class=" form-check-input " type="checkbox" id="saturday"
+                                    name="saturday">
+                                <label class="form-check-label" for="saturday">
+                                    Sat
+                                </label>
+                            </div>
+                            <div class="form-check pe-3">
+                                <input class=" form-check-input " type="checkbox" id="sunday"
+                                    name="sunday">
+                                <label class="form-check-label" for="sunday">
+                                    Sun
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="d-flex my-3 row g-0">
+                    <div class="w-80 d-flex" id="submit-button-div">
+                        <div class="flex-fill pe-2">
+                            <a role="submit" id="add-employee-form-submit" onclick="submitAddEmployeeForm()"
+                                class="btn w-100 btn-primary ">Add Employee</a>
+                        </div>
+                        <div class="flex-fill pe-2 d-none" id="add-employee-form-confirm-div">
+                            <a role="submit" id="add-employee-form-confirm" onclick="forceAddEmployee(this)"
+                                class="btn w-100 btn-outline-warning">Ignore Warnings</a>
+                        </div>
+                    </div>
+                    <div class="w-20">
+                        <input type="reset" value="Cancel" id="add-vehicle-form-cancel" class="btn w-100 btn-danger" />
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <div id="add-employee-form-success" class="d-none position-relative success">
+            <div class="d-flex  position-absolute top-50 start-50 translate-middle">
+                <div class="text-center">
+                    <h1 class="display-4">
+                        <i class=" text-success fa-3x fas fa-check-circle"></i>
+                    </h1>
+                    <p>Succesfully Added Employee {Name}</p>
+                    <button class="btn btn-primary" onclick="readyForm('add-employee-form')">Add another employee</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

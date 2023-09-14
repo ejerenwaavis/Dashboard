@@ -1,0 +1,356 @@
+<section id="addVehicleForm">
+    <div class="container-fluid px-0">
+        <div class="d-flex justify-content-between align-items-end">
+            <div class="">
+                <h6 class="placard-title text-mute col">Add Vehicle</h6>
+            </div>
+            <div class="py-2">
+                <button class="btn btn-sm btn-danger">Cancel</button>
+            </div>
+
+        </div>
+    </div>
+    <div class="placard p-5  rounded shadow">
+        <form id="add-vehicle-form">
+            <div class="container-fluid px-0">
+                <div class="row align-items-center g-3">
+                    <div id="add-vehicle-form-error-div" class="alert alert-danger alert-dismissible d-none fade" role="alert">
+                        <span>
+                            <strong id="add-vehicle-form-error-header">Please Correct the following errors!</strong> 
+                            <span class="d-block" >
+                                <ul id="add-vehicle-form-error-messages">
+                                </ul>
+                            </span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </span>
+                    </div>
+                    <h5 class="form-heading">Vehicle Info</h5>
+                    
+                    <div class="col col-sm-12 col-md-6 col-lg-6">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id=""> 
+                                <i class="text-danger me-1">*</i>
+                                VIN
+                            </span>
+                            <input type="text" required info="Vehicle cannot be registered without a VIN"  name="VIN" id="VIN" class="form-control" placeholder="Vehicle's VIN"
+                                aria-label="VIN" aria-describedby="">
+                        </div>
+                    </div>
+
+
+                    <div class="col col-sm-6 col-md-6 col-lg-2">
+                        <div class="input-group mb-3">
+                            <select class="form-select" info="Vehicle year not selected"  name="make-year" id="make-year" aria-label="make-year">
+                                <option value="null" selected>Select Year</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col col-sm-6 col-md-6 col-lg-4">
+                        <div class="input-group mb-3">
+                            <select class="form-select" info="Vehicle Make not selected"  onchange="loadModel(this)" name="make" id="make"
+                                aria-label="make">
+                                <option value=null selected>Select Make</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="col col-sm-6 col-md-6 col-lg-8 d-none" id="new-make-div">
+                        <div class="input-group mb-3">
+                            <!-- <span class="input-group-text" id="">New Make</span> -->
+                            <input type="text" name="new-make" in-play=false info="New vehicle Make empty"  id="new-make" class="form-control col col-6"
+                                placeholder="Type a new make name..." aria-label="new-make" aria-describedby="">
+                            <input type="text" name="new-model" in-play=false info="New vehicle Make empty"  id="new-model" class="form-control col col-6"
+                                placeholder="New model name..." aria-label="new-make" aria-describedby="">
+                        </div>
+                    </div>
+
+                    <div class="col col-sm-6 col-md-6 col-lg-4" id="model-div">
+                        <div class="input-group mb-3">
+                            <select class="form-select" info="Vehicle Model no provided"  disabled name="model" id="model" aria-label="model">
+                                <option value=null selected>Select Model</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col col-sm-6 col-md-6 col-lg-4">
+                        <div class="input-group mb-3">
+                            <select class="form-select" info="Vehicle type not selected'"  onchange="handleBoxType(this)" name="box-type" id="box-type"
+                                aria-label="box-type">
+                                <option value="null" selected>Box Type</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col col-sm-6 col-md-6 col-lg-4 d-none" id="new-box-type-div">
+                        <div class="input-group mb-3">
+                            <input class="form-control" in-play=false info="New Van Type not inputed"  placeholder="add new box type..." name="new-box-type"
+                                id="new-box-type" aria-label="new-box-type" />
+                        </div>
+                    </div>
+
+                    <!-- DoT & Licence -->
+                    <h5 class="form-heading">Licence / DoT</h5>
+                    <div class="col col-sm-12 col-md-6 col-lg-4">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">Lic. Exp.</span>
+                            <input type="date" class="form-control" info="Licence Exp. Date not provided"  id="licence-expiry-date" name="licence-expiry-date"
+                                aria-label="LED" id aria-describedby="">
+                        </div>
+                    </div>
+                    <div class="col col-sm-12 col-md-6 col-lg-4">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">Mile.</span>
+                            <input type="number" class="form-control" info="Vehicle Milleage not provided"  id="mileage" name="mileage" placeholder="Mileage#"
+                                aria-label="FID" aria-describedby="">
+                        </div>
+                    </div>
+                    <div class="col col-sm-12 col-md-6 col-lg-4">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">DoT Exp.</span>
+                            <input type="date" class="form-control" info="DoT Expiration Date not stated "  id="dot-expiry-date" name="dot-expiry-date" aria-label="FID" aria-describedby="">
+                        </div>
+                    </div>
+
+
+                    <!-- FEDEX -->
+                    <h5 class="form-heading">Fedex Info</h5>
+                    <div class="col col-sm-12 col-md-6 col-lg-3">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">FID</span>
+                            <input type="number" class="form-control" info="No Fedex ID Inputed"  name="FID" id="FID" placeholder="Fedex ID#"
+                                aria-label="FID" aria-describedby="">
+                        </div>
+                    </div>
+                    <div class="col col-sm-6 col-md-6 col-lg-4">
+                        <div class="input-group mb-3">
+                            <select class="form-select" info="Driver not assigned"  id="assign-driver" name="assign-driver"
+                                aria-label="Assign Driver">
+                                <option value="null" selected>Driver</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col col-sm-6 col-md-6 col-lg-2">
+                        <div class="input-group mb-3">
+                            <!-- <span class="input-group-text" id="basic-addon1">WA</span> -->
+                            <select class="form-select" id="assign-wa" info=" Work Area not Assigned" name="assign-wa" aria-label="Assign Work Area">
+                                <option value="null" selected>WA#</option>
+                            </select>
+                        </div>
+                    </div>
+
+
+
+                    <div class="col col-sm-6 col-md-6 col-lg-3">
+                        <div class="input-group mb-3">
+                            <select class="form-select" info="VEDR Camera not assigned"  name="assign-vedr" id="assign-vedr" aria-label="Assign VEDR">
+                                <option value="null" selected>Assign VEDR</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col col-sm-12 col-md-6 col-lg-12 mb-0">
+                        <div class="form-check form-switch ms-1 pb-3 ">
+                            <input class=" form-check-input"   type="checkbox" data-bs-toggle="collapse"
+                                data-bs-target="#decals-section" id="decals-section-button"  name="decals-section-button" aria-expanded="true" aria-controls="decals-section">
+                            <label class="form-check-label"  for="decals-section-button">Promotion Decals</label>
+
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-0 accordion-collapse collapse decals-section" id="decals-section">
+                        <div class="row align-items-start">
+                            <div class="col-sm-6 my-3 col-md-6 col-lg-3">
+                                <h6 class="placard-title my-0 mb-2">
+                                    <label class="form-check-label" for="all-driver-side">
+                                        Drivers Side
+                                    </label>
+                                    <input class=" form-check-input all  ms-2" type="checkbox" name="all-driver-side"
+                                        id="all-drvers-side">
+                                </h6>
+                                <div id="driver-side-decals" class="container border-start ">
+                                    <div class="row row-cols-1 align-items-center">
+                                        <div class="form-check col ">
+                                            <input class=" form-check-input single-check " type="checkbox"
+                                                id="drivers-big-fedex-ground" name="drivers-big-fedex-ground">
+                                            <label class="form-check-label" for="drivers-big-fedex-ground">
+                                                Big Fedex Ground
+                                            </label>
+                                        </div>
+                                        <div class="form-check col">
+                                            <input class=" form-check-input single-check " type="checkbox" id="drivers-usdot"
+                                                name="drivers-usdot">
+                                            <label class="form-check-label" for="drivers-usdot">
+                                                USDOT 26756
+                                            </label>
+                                        </div>
+                                        <div class="form-check col">
+                                            <input class=" form-check-input single-check " type="checkbox"
+                                                id="drivers-fedex-com" name="drivers-fedex-com">
+                                            <label class="form-check-label" for="drivers-fedex-com">
+                                                Fedex.com
+                                            </label>
+                                        </div>
+                                        <div class="form-check col">
+                                            <input class=" form-check-input single-check " type="checkbox" id="drivers-go-fedex"
+                                                name="drivers-go-fedex">
+                                            <label class="form-check-label" for="drivers-go-fedex">
+                                                1.800.GoFedex
+                                            </label>
+                                        </div>
+                                        <div class="form-check col">
+                                            <input class=" form-check-input single-check " type="checkbox"
+                                                id="drivers-care-elites" name="drivers-care-elites">
+                                            <label class="form-check-label" for="drivers-care-elites">
+                                                Care Elites Decal
+                                            </label>
+                                        </div>
+                                        <div class="form-check col">
+                                            <input class=" form-check-input single-check " type="checkbox"
+                                                id="drivers-vehicle-id" name="drivers-vehicle-id">
+                                            <label class="form-check-label" for="drivers-vehicle-id">
+                                                Fedex Vehicle ID
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="my-3 col-sm-6 col-md-6 col-lg-3">
+                                <h6 class="placard-title my-0 mb-2">
+                                    Pasangers Side
+                                    <input class=" form-check-input all  ms-2" type="checkbox" name="all-passengers-side" id="all-passengers-side ">
+                                </h6>
+                                <div id="passenger-side-decals" class="container border-start">
+                                    <div class="row row-cols-1 align-items-center">
+                                        <div class="form-check col ">
+                                            <input class=" form-check-input single-check " type="checkbox" name="passengers-big-fedex-ground" id="passengers-big-fedex-ground">
+                                            <label class="form-check-label" for="passengers-big-fedex-ground">
+                                                Big Fedex Ground
+                                            </label>
+                                        </div>
+                                        <div class="form-check col">
+                                            <input class=" form-check-input single-check " type="checkbox" name="passengers-usdot" id="passengers-usdot">
+                                            <label class="form-check-label" for="passengers-usdot">
+                                                USDOT 26756
+                                            </label>
+                                        </div>
+                                        <div class="form-check col">
+                                            <input class=" form-check-input single-check " type="checkbox" name="passengers-fedex-com" id="passengers-fedex-com">
+                                            <label class="form-check-label" for="passengers-fedex-com">
+                                                Fedex.com
+                                            </label>
+                                        </div>
+                                        <div class="form-check col">
+                                            <input class=" form-check-input single-check " type="checkbox" name="passengers-1800" id="passengers-1800">
+                                            <label class="form-check-label" for="passengers-1800">
+                                                1.800.GoFedex
+                                            </label>
+                                        </div>
+                                        <div class="form-check col">
+                                            <input class=" form-check-input single-check " type="checkbox" name="passengers-care-elites" id="passengers-care-elites">
+                                            <label class="form-check-label" for="passengers-care-elites">
+                                                Care Elites Decal
+                                            </label>
+                                        </div>
+                                        <div class="form-check col">
+                                            <input class=" form-check-input single-check " type="checkbox" name="passengers-vehicle-id" id="passengers-vehicle-id">
+                                            <label class="form-check-label" for="passengers-vehicle-id">
+                                                Fedex Vehicle ID
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="my-3 col-sm-6  col-md-6 col-lg-3">
+                                <h6 class="placard-title my-0 mb-2">
+                                    Back
+                                    <input class=" form-check-input all  ms-2" type="checkbox" value="" id="all-back" name="all-back">
+                                </h6>
+                                <div id="back-decals" class="container border-start">
+                                    <div class="row row-cols-1 align-items-center">
+                                        <div class="form-check col ">
+                                            <input class=" form-check-input single-check " type="checkbox" id="back-big-fedex-logo" name="back-big-fedex-logo">
+                                            <label class="form-check-label" for="back-big-fedex-logo">
+                                                Big Fedex Logo
+                                            </label>
+                                        </div>
+                                        <div class="form-check col">
+                                            <input class=" form-check-input single-check " type="checkbox" id="back-1800" name="back-1800">
+                                            <label class="form-check-label" for="back-1800">
+                                                1.800.GoFedex
+                                            </label>
+                                        </div>
+                                        <div class="form-check col">
+                                            <input class=" form-check-input single-check " type="checkbox" id="back-vehicle-id" name="back-vehicle-id">
+                                            <label class="form-check-label" for="back-vehicle-id">
+                                                Fedex Vehicle ID
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="my-3 col-sm-6  col-md-6 col-lg-3">
+                                <h6 class="placard-title my-0 mb-2">
+                                    Front
+                                    <input class=" form-check-input all  ms-2" type="checkbox" id="all-front" name="all-front">
+                                </h6>
+                                <div id="front-decals" class="container border-start">
+                                    <div class="row row-cols-1 align-items-center">
+                                        <div class="form-check col ">
+                                            <input class=" form-check-input single-check " type="checkbox" id="front-big-fedex-logo" name="front-big-fedex-logo">
+                                            <label class="form-check-label" for="front-big-fedex-logo">
+                                                Big Fedex Logo
+                                            </label>
+                                        </div>
+
+                                        <div class="form-check col">
+                                            <input class=" form-check-input single-check"  type="checkbox" name="front-vehicle-id"
+                                                id="front-vehicle-id">
+                                            <label class="form-check-label" for="front-vehicle-id">
+                                                Fedex Vehicle ID
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Maintainance History -->
+                    <h5 class="form-heading"> Maintenance </h5>
+                    <div class="col col-sm-12 col-md-6 col-lg-4">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">LMD</span>
+                            <input type="date" class="form-control" name="LMD" id="LMD" info="No Last Maintainance Date 'LMD'" placeholder="Last Main. Date" aria-label="FID"
+                                aria-describedby="">
+                        </div>
+                    </div>
+                    <div class="col col-sm-12 col-md-12 col-lg-12">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="">Faults</span>
+                            <textarea class="form-control" name="faults" id="faults" info="No Known faults listed" placeholder="List all faults in seperate lines"
+                                aria-label="faults" aria-describedby=""></textarea>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="d-flex my-2 row g-0">
+                    <div class="w-80 d-flex" id="submit-button-div">
+                        <div class="flex-fill pe-2">
+                            <a role="submit" id="add-vehicle-form-submit" onclick="submitAddVehicleForm()" class="btn w-100 btn-primary ">ADD New Vehicle</a>
+                        </div>
+                        <div class="flex-fill pe-2 d-none" id="add-vehicle-form-confirm-div">
+                            <a role="submit" id="add-vehicle-form-confirm" onclick="forceAddVehicle(this)" class="btn w-100 btn-outline-warning">Ignore Warnings</a>
+                        </div>
+                    </div>
+                    <div class="w-20">
+                        <a id="add-vehicle-form-cancel" class="btn w-100 btn-danger">Cancel</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
