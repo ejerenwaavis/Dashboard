@@ -4,7 +4,6 @@
   "description": "assistant to help create r-warrior routes",
   "main": "server.js",
   "dependencies": {
-    "axios": "^1.5.1",
     "bcrypt": "^5.0.1",
     "body-parser": "^1.19.0",
     "dotenv": "^8.2.0",

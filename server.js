@@ -21,7 +21,7 @@ const MONGOUSER = process.env.MONGOUSER;
 const MONGOTCS_USER = process.env.MONGOTCS_USER;
 const MONGOTCS_PASS = process.env.MONGOTCS_PASS;
 
-const axios = require('axios');
+// const axios = require('axios');
 
 
 
@@ -764,15 +764,15 @@ app.route(APP_DIRECTORY + "/extractReport")
     let url = 'https://triumphcourier.com/mailreader/extract';
     
     // Make a GET request to the API
-  axios.get(url)
-  .then((response) => {
-    console.log('API Response:', response.data);
-    res.send(response);
-  })
-  .catch((error) => {
-    console.error('Error making the API request:', error);
-    res.send(response);
-  });
+  // axios.get(url)
+  // .then((response) => {
+  //   console.log('API Response:', response.data);
+  //   res.send(response);
+  // })
+  // .catch((error) => {
+  //   console.error('Error making the API request:', error);
+  //   res.send(response);
+  // });
 })
 
 app.route(APP_DIRECTORY + "/getReport")
