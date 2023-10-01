@@ -14,9 +14,20 @@ const DEVELOPEMENT = process.env.DEVELOPEMENT
 
 const HEREAPI = process.env.HEREAPI;
 
+const MONGOURI2 = process.env.MONGOURI2;
 const MONGOPASSWORD = process.env.MONGOPASSWORD;
 const MONGOUSER = process.env.MONGOUSER;
-const MONGOURI2 = process.env.MONGOURI2;
+
+const MONGOTCS_USER = process.env.MONGOTCS_USER;
+const MONGOTCS_PASS = process.env.MONGOTCS_PASS;
+
+const axios = require('axios');
+
+
+
+const REPORTS_DB = process.env.REPORTS_DB;
+const USERS_DB = process.env.USERS_DB;
+
 
 
 const SALTROUNDS = 10;
@@ -79,21 +90,32 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Mongoose Configuration and Setup
-const uri = "mongodb+srv://" + MONGOUSER + ":" + MONGOPASSWORD + MONGOURI2;
-// console.log(uri);
-mongoose.connect(uri, {
+const usersDB = "mongodb+srv://" + MONGOUSER + ":" + MONGOPASSWORD + USERS_DB;
+const brandsDB = "mongodb+srv://" + MONGOUSER + ":" + MONGOPASSWORD + MONGOURI2;
+const reportsDB = "mongodb+srv://" + MONGOTCS_USER + ":" + MONGOTCS_PASS + REPORTS_DB;
+
+
+mongoose.set("useCreateIndex", true);
+
+const brandConn = mongoose.createConnection(brandsDB, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
-mongoose.set("useCreateIndex", true);
-
 const brandSchema = new mongoose.Schema({
   _id: String,
   trackingPrefixes: [String], //array of variants of the tracking prefixes
 });
 
-const Brand = mongoose.model("Brand", brandSchema);
+const Brand = brandConn.model("Brand", brandSchema);
 var allBrands;
+
+
+
+
+const userConn = mongoose.createConnection(usersDB, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
 
 const userSchema = new mongoose.Schema({
@@ -116,7 +138,8 @@ const userSchema = new mongoose.Schema({
   usageCount: { type: Number, default: 0 },
 });
 userSchema.plugin(passportLocalMongoose);
-const User = mongoose.model("testUser", userSchema);
+
+const User = userConn.model("User", userSchema);
 
 /********* Configure Passport **************/
 passport.use(User.createStrategy());
@@ -248,7 +271,31 @@ passport.use(new GoogleStrategy({
   }
 ));
 
+// Mongoose Report DB Connection Setup
+const reportConn = mongoose.createConnection(reportsDB, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
+const reportSchema = new mongoose.Schema({
+    _id: Date,
+    date: {type:Date, default: new Date()},
+    drivers:[{
+        driverNumber: Number, 
+        manifest:[{
+                brand: String,
+                barcode: String,
+                status: {type:{}, default:null},
+                name: String,
+                street: String,
+                city: String,
+                state: String,
+                country: String,
+        }]
+    }]
+});
+const Report = reportConn.model("Report", reportSchema);
+var reports;
 
 
 
@@ -259,7 +306,7 @@ app.route(APP_DIRECTORY + "/")
     // print(tempFilePath);
     if (req.isAuthenticated() || DEVELOPEMENT) {
       res.render("dashboard.ejs", {
-        body: new Body("Upload", "", ""),
+        body: new Body("Dashboard", "", ""),
         user: (req.user)? req.user : null,
       });
     } else {
@@ -711,6 +758,41 @@ app.get(APP_DIRECTORY + "/hereApiKey", function (req, res) {
 })
 
 
+/* Handling Report REquests */
+app.route(APP_DIRECTORY + "/extractReport")
+  .get(async function (req, res) {
+    let url = 'https://triumphcourier.com/mailreader/extract';
+    
+    // Make a GET request to the API
+  axios.get(url)
+  .then((response) => {
+    console.log('API Response:', response.data);
+    res.send(response);
+  })
+  .catch((error) => {
+    console.error('Error making the API request:', error);
+    res.send(response);
+  });
+})
+
+app.route(APP_DIRECTORY + "/getReport")
+  .get(async function (req, res) {
+    today = await today();
+    report = await Report.find({_id:today},'-__v');
+    res.send(report);
+})
+
+app.route(APP_DIRECTORY + "/getDriverName/:driverNumber")
+  .get(async function (req, res) {
+    driver = (contractors.filter((c) => c.driverNumber === req.params.driverNumber))[0];
+    res.send(driver);
+})
+
+
+
+
+
+
 /***************** Handling Payments  ********************/
 app.post(APP_DIRECTORY + '/create-checkout-session', async (req, res) => {
   const { priceId } = req.body;
@@ -753,6 +835,7 @@ app.post(APP_DIRECTORY + '/create-checkout-session', async (req, res) => {
 app.listen(process.env.PORT || 3050, function () {
   clearTempFolder();
   cacheBrands();
+  cacheReports();
   console.error("RoutingAssistant is live on port " + ((process.env.PORT) ? process.env.PORT : 3050));
 });
 
@@ -1269,16 +1352,94 @@ async function cacheBrands(){
   stringBrands = JSON.stringify(allBrands);
   // reCon = JSON.parse(stringBrands);
   // console.log(reCon);
-  fs.writeFile(tempFilePath + 'brands.txt', stringBrands, err => {
+
+  fs.mkdir(tempFilePath, (err) => {
+      if (err) {
+        // console.log(err.message);
+        // console.log(err.code);
+        if (err.code === "EEXIST") {
+          if(SERVER)
+          console.error("Directory ALREADY Exists.");
+           fs.writeFile(tempFilePath + 'brands.txt', stringBrands, err => {
+              if (err) {
+                console.error(err);
+              }else{
+                if(SERVER) 
+                console.log("Brands written to file");
+            }
+          }); 
+        } else {
+          console.error(err.code);;
+          console.error(err);;
+        }
+      }else{
+        fs.writeFile(tempFilePath + 'brands.txt', stringBrands, err => {
+          if (err) {
+            console.error(err);
+          }else{
+            console.log("Brands written to file");
+          }
+        }); 
+        console.log("'/tmp' Directory was created.");
+      }
+    });
+ 
+}
+
+async function clearTempFolder(){
+  fs.readdir(tempFilePath, (err, files) => {
   if (err) {
-    console.error(err);
+    console.error(err.code + " Failed to clear temp folder");
+  }else{
+    // console.error(files);
+    for (const file of files) {
+      if(file.startsWith("R4M") || file.startsWith("RW") || file.startsWith("brands.txt")){
+        fs.unlink(path.join(tempFilePath, file), (err) => {
+          if (err) throw err; 
+        });
+      }
+    }
   }
-  
-  // file written successfully
-  console.error("Brands written to file");
 });
 }
 
+async function cacheReports(){
+  let today = (new Date()).setHours(0,0,0,0);
+  reports = await Report.find({_id:today},"-__v");
+  stringReport = JSON.stringify(reports);
+  // reCon = JSON.parse(stringRoutes);
+  // console.log(reCon);
+  fs.mkdir(tempFilePath, (err) => {
+      if (err) {
+        // console.log(err.message);
+        // console.log(err.code);
+        if (err.code === "EEXIST") {
+          if(SERVER) 
+          console.error("Directory ALREADY Exists.");
+           fs.writeFile(tempFilePath + 'reports.txt', stringReport, err => {
+              if (err) {
+                console.error(err);
+              }else{
+                if(SERVER) 
+                console.error("Reports written to file");
+              }
+            }); 
+        } else {
+          console.error(err.code);;
+          console.error(err);;
+        }
+      }else{
+        fs.writeFile(tempFilePath + 'reports.txt', stringRoutes, err => {
+          if (err) {
+            console.error(err);
+          }else{
+            console.log("Reports written to file");
+          }
+        }); 
+        console.log("'/tmp' Directory was created.");
+      }
+    });
+}
 
 async function processBrandUpdates(brands){
   return new Promise((resolve,reject) => {
@@ -1404,18 +1565,8 @@ async function updateBrand(brand) {
   });
 }
 
-async function clearTempFolder(){
-  fs.readdir(tempFilePath, (err, files) => {
-  if (err) throw err;
-
-  for (const file of files) {
-    if(file.startsWith("R4M") || file.startsWith("RW") || file.startsWith("bra")){
-      fs.unlink(path.join(tempFilePath, file), (err) => {
-        if (err) throw err; 
-      });
-    }
-  }
-});
+function today(){
+  return (new Date()).setHours(0,0,0,0);
 }
 
 function Body(title, error, message) {
@@ -1426,3 +1577,89 @@ function Body(title, error, message) {
   this.publicFolder = PUBLIC_FOLDER;
   this.publicFiles = PUBLIC_FILES;
 }
+
+
+
+contractors = [
+  { driverNumber : '203593', name : 'Frankie ROBINSON'},
+  { driverNumber : '219029', name : 'Andreea OKONTA'},
+  { driverNumber : '227410', name : 'Yacouba NABE'},
+  { driverNumber : '230161', name : 'Jones MOORE'},
+  { driverNumber : '236765', name : 'Kenya SAMUELS'},
+  { driverNumber : '250660', name : 'Susan TAYLOR'},
+  { driverNumber : '253249', name : 'Christopher RUFFING'},
+  { driverNumber : '253799', name : 'Nestor PUENTES'},
+  { driverNumber : '253800', name : 'Mauricio MARULANDA'}, 
+  { driverNumber : '255305', name : 'Ana BAZA PAJAROS'},
+  { driverNumber : '256956', name : 'Avis EJERENWA'},
+  { driverNumber : '257085', name : 'Michael MCKEEVER'},
+  { driverNumber : '257137', name : 'Laray KING'},
+  { driverNumber : '257275', name : 'Freddy LOZANO'},
+  { driverNumber : '257329', name : 'Christopher TAYLOR'},
+  { driverNumber : '257398', name : 'Edwin BARHAM'},
+  { driverNumber : '257553', name : 'Anthony JACKSON'},
+  { driverNumber : '257596', name : 'Joseph JONES'},
+  { driverNumber : '257697', name : 'Jonathan GHOLSON'},
+  { driverNumber : '258743', name : 'Maria LOZANO'},
+  { driverNumber : '258823', name : 'Destiny SMITH'},
+  { driverNumber : '258852', name : 'Brenda CANAS MEJIA'},
+  { driverNumber : '258828', name : 'Emerald SHEARER'},
+  { driverNumber : '258986', name : 'Damon ILER'},
+  { driverNumber : '259013', name : 'Jhon PALACIO TINTINAGO'},
+  { driverNumber : '259016', name : 'Latasha PALMER'},
+  { driverNumber : '259027', name : 'Jorge GUTIERREZ'},
+  { driverNumber : '259257', name : 'Lenora TAYLOR'},
+  { driverNumber : '259353', name : 'Jessica TAPIA'},
+  { driverNumber : '259755', name : 'Lennys CENTENO CORDOVA'},
+  { driverNumber : '259908', name : 'Cornealius WHITFIELD'},
+  { driverNumber : '259945', name : 'Damien ROBINSON'},
+  { driverNumber : '260582', name : 'Natalie ILDEFONSO DIAZ'},
+  { driverNumber : '260066', name : 'Mark SEARCY'},
+  { driverNumber : '260616', name : 'Marquez JOHNSON'},
+  { driverNumber : '260708', name : 'Daiana SERNA SANCHEZ'},
+  { driverNumber : '260729', name : 'Antonio REDDING'},
+  { driverNumber : '260748', name : 'Timothy BURNS'},
+  { driverNumber : '260749', name : 'Malik DAY'},
+  { driverNumber : '261126', name : 'Nestor ENRIQUE URDANETA'},
+  { driverNumber : '261456', name : 'Jawaun MOSES'},
+  { driverNumber : '261486', name : 'Enos MULLINGS'},
+  { driverNumber : '261767', name : 'Gia TAYLOR'},
+  { driverNumber : '262479', name : 'Shamira LEE JUAREZ'},
+  { driverNumber : '262862', name : 'Jamilah TURNER'},
+  { driverNumber : '262863', name : 'Keema BRIDGEWATER'},
+  { driverNumber : '262942', name : 'Anterio BATEMAN'},
+  { driverNumber : '263152', name : 'Maria DUQUE VELEZ'},
+  { driverNumber : '263388', name : 'Willie MURRELL JR'},
+  { driverNumber : '262946', name : 'Dominique WATSON'},
+  { driverNumber : '263442', name : 'Cynthia TORRES'},
+  { driverNumber : '263461', name : 'Adina JONES'},
+  { driverNumber : '264337', name : 'Annette GAMBLE'},
+  { driverNumber : '263976', name : 'Delonte WRIGHT'},
+  { driverNumber : '264483', name : 'Philip MADISON'},
+  { driverNumber : '264576', name : 'Steven MOTIERAM'},
+  { driverNumber : '264505', name : 'Sheafra HAMMETT'},
+  { driverNumber : '264774', name : 'Al BAKER'},
+  { driverNumber : '264886', name : 'Lionel CAVE'},
+  { driverNumber : '264821', name : 'Derick SMITH'},
+  { driverNumber : '265078', name : 'Jasmine COGGINS'},
+  { driverNumber : '265122', name : 'Cynthia COLLINS'},
+  { driverNumber : '265151', name : 'Keisa SULLIVAN'},
+  { driverNumber : '265165', name : 'Darrell LAKE JR'},
+  { driverNumber : '265219', name : 'Akeem ALCOTT'},
+  { driverNumber : '265265', name : 'Brittany SUMLER'},
+  { driverNumber : '265289', name : 'Patrick WILLIAMS'},
+  { driverNumber : '265400', name : 'John-Thomas GARNER'},
+  { driverNumber : '265598', name : 'Moro DIALLO'},
+  { driverNumber : '265750', name : 'Sandra MARIN LOZANO'},
+  { driverNumber : '265777', name : 'Tyquan WILLIAMS'},
+  { driverNumber : '266049', name : 'Michael HAUSER'},
+  { driverNumber : '266687', name : 'Kimicion BROWN'},
+  { driverNumber : '266122', name : 'Edwin THURANIRA'},
+  { driverNumber : '266822', name : 'Ilyas ZOUHEIR'},
+  { driverNumber : '267199', name : 'Isemelda JOSEPH DURACIN'},
+  { driverNumber : '268645', name : 'Freddy MURILLO'},
+  { driverNumber : '268717', name : 'Reshonnah HARVEY'},
+  { driverNumber : '268845', name : 'Christian GALVEZ'},
+  { driverNumber : '269487', name : 'Justin MCCALLA'},
+  { driverNumber : '269640', name : 'Jesus CONTRERAS QUINTERO'}
+]

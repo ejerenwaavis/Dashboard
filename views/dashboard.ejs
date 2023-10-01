@@ -8,9 +8,10 @@
     <meta name="author" content="Avis">
     <meta name="generator" content="Jekyll v4.1.1">
     <title>
-        Dashboard | CED Management
+        Dashboard | TCS Management
     </title>
     <base href="/">
+    <link rel="icon" href="https://triumphcourier.com/img/Logo-SVG.svg">
 
 
     <!-- Bootstrap core CSS -->
@@ -26,7 +27,7 @@
 
 
     <!-- Custom styles for this template -->
-    <link rel="stylesheet" href="css/bootstrap-dashboard.css">
+    <link rel="stylesheet" href="<%= body.publicFolder %>/css/bootstrap-dashboard.css">
 
     <style>
         .bd-placeholder-img {
@@ -46,13 +47,30 @@
 
 
     <!-- Custom styles -->
-    <link href="css/dashboard.css" rel="stylesheet">
+    <link href="<%= body.publicFolder %>/css/dashboard.css" rel="stylesheet">
+
+    <!-- jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.min.js"
+        integrity="sha384-Rx+T1VzGupg4BHQYs2gCW9It+akI2MM/mndMCy36UVfodzcJcF0GGLxZIzObiEfa"
+        crossorigin="anonymous"></script>
+    
+    <!-- <script src="js/bootsrap-dashboard.js"></script> -->
+    <!-- <script src="js/dashboard-style-behaviors.js"></script> -->
+    <script src="<%= body.publicFolder %>js/formHandler.js"></script>
 </head>
 
 <body>
+    <span class="d-none" id="domain" domain="<%= body.domain %>">
+    </span>
 
     <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
-        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">Admin</a>
+        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#"><img src=" https://triumphcourier.com/img/Logo-white.png" height="30" alt=""> <h5 class="ms-3 mt-2 d-inline-block">Dashboard</h5></a>
         <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
             data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
             aria-label="Toggle navigation">
@@ -71,30 +89,16 @@
             <%- include('partials/navigation'); %>
                 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                     <div class="container-fluid" id="content">
-                        <%- include('partials/mmr'); %>
+                        <%- include('partials/deliveryreports'); %>
                         <%- include('partials/dailySchedule'); %>
-                        <%- include('partials/welcome'); %>
                         <%- include('partials/tasks'); %>
-                        <%- include('partials/vehicleInformation'); %>
-                        <%- include('partials/employeeInformation'); %>
-                        <%- include('partials/addVehicle'); %>
-                        <%- include('partials/addDriver'); %>
                     </div>
                 </main>
         </div>
     </div>
 
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj"
-        crossorigin="anonymous"></script>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
-        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-
-    <!-- <script src="js/bootsrap-dashboard.js"></script> -->
-    <script src="js/dashboard-style-behaviors.js"></script>
-    <script src="js/formHandler.js"></script>
 </body>
 
 </html>

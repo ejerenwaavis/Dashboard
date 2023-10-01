@@ -1,14 +1,43 @@
 <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
     <div class="position-sticky pt-3 ps-2">
         <ul class="nav flex-column">
-            <li class="nav-item">
+            <li class="nav-item d-none">
                 <a class="nav-link active" aria-current="page" href="#">
                     <i class="fas fa-tachometer-alt"></i>
                     Dashboard
                 </a>
             </li>
+
             <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                <span>Fleet</span>
+                <span>Reports</span>
+                <a class="link-secondary" href="#" aria-label="Add a new report">
+                    <span data-feather="plus-circle"></span>
+                </a>
+            </h6>
+            <hr>
+
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-paste"></i>
+                    Delivery Report
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-paste"></i>
+                    Priority Report
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="far fa-clipboard"></i>
+                    <span class="nav-text">MLS</span>
+                </a>
+            </li>
+
+            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                <span>Schedular</span>
                 <a class="link-secondary" href="#" aria-label="Add a new report">
                     <span data-feather="plus-circle"></span>
                 </a>
@@ -18,7 +47,13 @@
             <li class="nav-item">
                 <a class="nav-link" href="#">
                     <i class="fas fa-shipping-fast"></i>
-                    Vehicle Info
+                    Today
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-user"></i>
+                    This Week
                 </a>
             </li>
 
@@ -27,7 +62,7 @@
                     data-bs-target="#maintainace-collapseOne" aria-expanded="false"
                     aria-controls="maintainace-collapseOne">
                     <i class="fas fa-info-circle"></i>
-                    Maint. Info
+                    Calendar
                     <i class="toggle-expand-button fas fa-1x fa-chevron-down"></i>
                 </a>
                 <div id="maintainace-collapseOne" class="accordion-collapse collapse" aria-labelledby="flush-headingOne"
@@ -35,11 +70,11 @@
                     <div class="accordion-body ">
                         <a class="nav-link" href="#">
                             <i class="fas fa-tools"></i>
-                            <span class="nav-text">Maint. Due</span>
+                            <span class="nav-text">Calendar</span>
                         </a>
                         <a class="nav-link" href="#">
-                            <i class="fas fa-clipboard"></i>
-                            <span class="nav-text">DoT Insp. Due</span>
+                            <i class="fa fa-plane-departure"></i>
+                            Vacation Tracker
                         </a>
                     </div>
                 </div>
@@ -67,46 +102,12 @@
                     Managers
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">
-                    <i class="fa fa-plane-departure"></i>
-                    Vacation Tracker
-                </a>
-            </li>
+
             <li class="nav-item">
                 <a class="nav-link" href="#">
                     <i class="fa fa-scroll"></i>
                     Employee Manual
                 </a>
-            </li>
-            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                <span>Reports</span>
-                <a class="link-secondary" href="#" aria-label="Add a new report">
-                    <span data-feather="plus-circle"></span>
-                </a>
-            </h6>
-            <hr>
-
-            <li class="nav-item accordion accordion-flush" onclick="toggleExpandButton(this)">
-                <a class="nav-link collapsed" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#reports-collapseOne" aria-expanded="false" aria-controls="reports-collapseOne">
-                    <i class="fas fa-paste"></i>
-                    MMR
-                    <i class="toggle-expand-button fas fa-1x fa-chevron-down"></i>
-                </a>
-                <div id="reports-collapseOne" class="accordion-collapse collapse mt-0"
-                    aria-labelledby="flush-headingOne" data-bs-parent="#accordionFlushExample">
-                    <div class="accordion-body ">
-                        <a class="nav-link" href="#">
-                            <i class="far fa-clipboard"></i>
-                            <span class="nav-text">New MMR</span>
-                        </a>
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-clipboard"></i>
-                            <span class="nav-text">MMRs'</span>
-                        </a>
-                    </div>
-                </div>
             </li>
 
 

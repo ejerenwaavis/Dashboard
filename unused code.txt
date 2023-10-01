@@ -1,0 +1,6 @@
+                        <%- include('partials/mmr'); %>
+                        <%- include('partials/welcome'); %>
+                        <%- include('partials/vehicleInformation'); %>
+                        <%- include('partials/employeeInformation'); %>
+                        <%- include('partials/addVehicle'); %>
+                        <%- include('partials/addDriver'); %>
