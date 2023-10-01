@@ -32,7 +32,9 @@ async function displayReport(report) {
     console.log(driverName);
     var latestEvent = ((new Date()).setHours(0,0,0,0));
     // console.log(latestEvent);
+    let count = 0;
     for await(const stop of driver.manifest){
+      console.log((count++)+'/'+driver.manifest.length);
       let info = await getTrackingnInfo(stop.barcode);
       let stopEventTime = (new Date(info[0].DateTime)).getTime()
       
