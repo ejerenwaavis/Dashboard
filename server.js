@@ -22,7 +22,7 @@ const MONGOTCS_USER = process.env.MONGOTCS_USER;
 const MONGOTCS_PASS = process.env.MONGOTCS_PASS;
 
 // const axios = require('axios');
-
+const TRACKINGURL = process.env.TRACKINGURL;
 
 
 const REPORTS_DB = process.env.REPORTS_DB;
@@ -777,17 +777,34 @@ app.route(APP_DIRECTORY + "/extractReport")
 
 app.route(APP_DIRECTORY + "/getReport")
   .get(async function (req, res) {
-    today = await today();
-    report = await Report.find({_id:today},'-__v');
+    let today = await getToday();
+    let report = await Report.find({_id:today},'-__v');
     res.send(report);
 })
 
+app.route(APP_DIRECTORY + "/getTrackingResource")
+  .get(function (req, res) {
+    console.error(outputDate() + " Hostname: "+req.hostname);
+    if((req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| DEVELOPEMENT){
+      res.send(TRACKINGURL)
+    }else{
+      res.send("unauthorized request")
+    }
+})
+
 app.route(APP_DIRECTORY + "/getDriverName/:driverNumber")
-  .get(async function (req, res) {
+  .get(function (req, res) {
     driver = (contractors.filter((c) => c.driverNumber === req.params.driverNumber))[0];
     res.send(driver);
 })
 
+
+
+app.route(APP_DIRECTORY + "/error")
+  .get(async function (req, res) {
+    throwFalseError();
+    res.send("error thrown! did you get it?");
+})
 
 
 
@@ -831,13 +848,18 @@ app.post(APP_DIRECTORY + '/create-checkout-session', async (req, res) => {
 });
 
 
-
-app.listen(process.env.PORT || 3050, function () {
-  clearTempFolder();
-  cacheBrands();
-  cacheReports();
-  console.error("RoutingAssistant is live on port " + ((process.env.PORT) ? process.env.PORT : 3050));
-});
+try{
+  app.listen(process.env.PORT || 3050, function () {
+    keepAlive();
+    clearTempFolder();
+    cacheBrands();
+    cacheReports();
+    console.error(new Date().toLocaleString() + " >> Dashboard is live on port " + ((process.env.PORT) ? process.env.PORT : 3050));
+  })
+}catch(error ) {
+    // Error case
+    console.error('Error:', error);
+}
 
 
 
@@ -1565,7 +1587,7 @@ async function updateBrand(brand) {
   });
 }
 
-function today(){
+function getToday(){
   return (new Date()).setHours(0,0,0,0);
 }
 
@@ -1578,7 +1600,26 @@ function Body(title, error, message) {
   this.publicFiles = PUBLIC_FILES;
 }
 
+function throwFalseError() {
+  throw new Error("just for cause --- attempt to restart in 5seconds")
+}
 
+async function keepAlive(){
+  interval = 3600000;
+  count = 1;
+  console.error(outputDate()+"Keep Alive Service Initiated, [Interval: "+ interval/60000+" mins]");
+  startDate = new Date(2023,10,03);
+  while (startDate.getDate() < 5) {
+    console.log(outputDate() + "Keep Alive Ping: " + count++);
+    await new Promise( function(resolve,reject){
+      setTimeout(resolve, interval)//1hr
+    });
+  }
+}
+
+function outputDate() {
+  return (new Date().toLocaleString()) + " >> ";
+}
 
 contractors = [
   { driverNumber : '203593', name : 'Frankie ROBINSON'},
