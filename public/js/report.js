@@ -8,7 +8,7 @@ window.onload = async (event) => {
 
 async function pullReport() {
   $("#pullRequestButton").addClass("disabled");
-  $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="report-process-status" role="status"> Loading...</span>');
+  $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="report-process-status" role="status"></span> Loading...</span>');
   // let manifestProcessing = await processManifests();
   // console.log(manifestProcessing);
   $.get(domain + '/getReport', async function (response) {
@@ -38,6 +38,7 @@ async function displayReport(report) {
     let count = 0;
     for await(const stop of driver.manifest){
       console.log((count++)+'/'+driver.manifest.length);
+      updateLoadStatus(Math.trunc(((count/driver.manifest.length) * 100)));
       let info = await getTrackingnInfo(stop.barcode);
       // console.log(info);
       let stopEventTime = (new Date(info[0].UtcEventDateTime)).getTime()
@@ -176,6 +177,10 @@ function processManifests() {
       reject(error);
     });
   });
+}
+
+function updateLoadStatus(percentage) {
+  $("#report-process-status").text(' '+ percentage + '% ');
 }
 
 
