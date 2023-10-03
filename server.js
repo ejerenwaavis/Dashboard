@@ -849,12 +849,12 @@ app.post(APP_DIRECTORY + '/create-checkout-session', async (req, res) => {
 
 
 try{
-  app.listen(process.env.PORT || 3050, function () {
+  app.listen(process.env.PORT || 3060, function () {
     keepAlive();
     clearTempFolder();
     cacheBrands();
     cacheReports();
-    console.error(new Date().toLocaleString() + " >> Dashboard is live on port " + ((process.env.PORT) ? process.env.PORT : 3050));
+    console.error(new Date().toLocaleString() + " >> Dashboard is live on port " + ((process.env.PORT) ? process.env.PORT : 3060));
   })
 }catch(error ) {
     // Error case
