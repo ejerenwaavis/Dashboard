@@ -1,13 +1,16 @@
 let domain = $('#domain').attr('domain');
-
-window.onload = (event) => {
+let trackingResource = "";
+window.onload = async (event) => {
   $("#pullRequestButton").removeClass("disabled");
+    trackingResource = await getTrackingURL();
 };
 
 
 async function pullReport() {
   $("#pullRequestButton").addClass("disabled");
-  $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span role="status">Loading...</span>');
+  $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="report-process-status" role="status"> Loading...</span>');
+  // let manifestProcessing = await processManifests();
+  // console.log(manifestProcessing);
   $.get(domain + '/getReport', async function (response) {
     console.log('Processing Report');
     console.log(response);
@@ -36,57 +39,42 @@ async function displayReport(report) {
     for await(const stop of driver.manifest){
       console.log((count++)+'/'+driver.manifest.length);
       let info = await getTrackingnInfo(stop.barcode);
-      let stopEventTime = (new Date(info[0].DateTime)).getTime()
+      // console.log(info);
+      let stopEventTime = (new Date(info[0].UtcEventDateTime)).getTime()
       
       if(stopEventTime > latestEvent){
         latestEvent = stopEventTime;
       }
-      switch (info[0].EventModifier) {
-        case 'FOTO':
+      if(info[0].EventCode === 'DLVD' || info[0].Status === 'Delivered'){
           del.push(stop);
-          // console.log(stop.barcode + " : is Delivered with pix");
-          break;
-        case 'DLVD':
-          del.push(stop);
-          // console.log(stop.barcode + " : is Delivered");
-          break;
-        case 'UTLV':
-          attempts.push(stop);
-          // console.log(stop.barcode + " : is Attempted");
-          break;
-        case 'OFDL':
+      }else if(info[0].EventCode === 'OFDL' || info[0].EventCode === 'OD' || info[0].EventShortDescription === 'Out for delivery.'){
           ofd.push(stop);
-          // console.log(stop.barcode + " : is Out For Delivery");
-          break;
-        case 'LOAD':
-          load.push(stop);
-          // console.log(stop.barcode + " : is Loaded");
-          break;
-        case 'SFCT':
+          // console.log(info[0]);
+          // console.log(stop.street);
+      }else if(info[0].EventCode === 'NH' || info[0].EventCode === 'BCLD' || info[0].EventShortDescription === 'Delayed. Delivery date updated.' || info[0].Status === 'Pending'){
+          attempts.push(stop);
+      }else if(info[0].EventCode === 'RD' || info[0].EventCode === 'SFCT' || info[0].EventShortDescription === 'Packaged received at the facility.'){
           mls.push(stop);
-          // console.log(stop.barcode + " : is on MLS");
-          break;
-        default:
-          // console.log("Invalid day.");
+      }else{
+        console.log("Cant Process Package: "+ stop.barcode);
       }
     }
     let loadNumber = ofd.length + attempts.length + del.length;
-    let progress = ((del.length + attempts.length)/loadNumber) * 100;
+    let progress = Math.trunc(((del.length + attempts.length)/loadNumber) * 100);
     html += '<td>'+driverName+'</td>';
     html += '<td>'+(loadNumber)+'</td>';
     html += '<td>'+ ofd.length +'</td>';
     html += '<td>'+ del.length +'</td>';
-    html += '<td>'+ (ofd.length + del.length + mls.length + attempts) +'</td>';
+    html += '<td>'+ (ofd.length + del.length + mls.length + attempts.length) +'</td>';
     html += '<td>'+ mls.length +'</td>';
     html += '<td>'+ attempts.length +'</td>';
     html += '<td> <div class="progress bg-secondary"> <div class="progress-bar bg-success" role="progressbar" style="width: '+progress+'%;"'
                   +'aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">'+progress+'%</div></div></td>';
-    
     html += '<td>'+new Date(latestEvent).toLocaleString()+'</td>';
     html+="</tr>";
     bigHtml += html;
   }
-
+  $('#reportDetails tbody').html("")
   $('#reportDetails tbody').append(bigHtml);
 }
 
@@ -103,24 +91,6 @@ async function displayReport(report) {
 */
 
 
-/*
-
-                <td>Avis Ezio</td>
-                <td>100</td>
-                <td>20</td>
-                <td>79</td>
-                <td>105</td>
-                <td>5</td>
-                <td>1</td>
-                <td>
-                    <div class="progress bg-secondary">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: 80%;" aria-valuenow="25"
-                            aria-valuemin="0" aria-valuemax="100">80%</div>
-                    </div>
-                </td>
-                <td>09/28/2023 15:05:05</td>
-            </tr>
-*/
 
 function trackPackage() {
   let tracking = $("#barcodeNumber").val().trim();
@@ -154,6 +124,7 @@ function trackPackage() {
         });
         $("#trackingDetails").html(detailsHtml);
       }else{
+
         console.log("Didnt find Shit");
       }
 
@@ -164,20 +135,57 @@ function trackPackage() {
   }
 }
 
-async function getDriverName(driverNumber) {
-  let name = "";
-  await $.get(domain + '/getDriverName/'+driverNumber, function async(result) {
-    console.log(result);
-    name = result.name;
-  })
-  return name;
+// async function getDriverName(driverNumber) {
+//   let name = "";
+//   await $.get(domain + '/getDriverName/'+driverNumber, function async(result) {
+//     console.log(result);
+//     name = result.name;
+//   })
+//   return name;
+// }
+
+function getDriverName(driverNumber) {
+  return new Promise((resolve, reject) => {
+    let name = "";
+    $.get(domain + '/getDriverName/'+driverNumber, function(data) {
+      // console.log(data.name);
+      resolve(data.name);
+    }).fail(function(error) {
+      reject(error);
+    });
+  });
 }
 
+function getTrackingURL() {
+  return new Promise((resolve, reject) => {
+    $.get(domain + '/getTrackingResource', function(data) {
+      resolve(data);
+      console.log('Tracking URL Acquired');
+    }).fail(function(error) {
+      reject(error);
+    });
+  });
+}
+function processManifests() {
+  return new Promise((resolve, reject) => {
+    let url = 'https://triumphcourier.com/mailreader/extract';
+    $.get(url, function(data) {
+      // console.log(data);
+      resolve(data);
+    }).fail(function(error) {
+      reject(error);
+    });
+  });
+}
+
+
 function getTrackingnInfo(trackingNumber){
-  return new Promise(function (resolve, reject){
-    $.get("https://t.lasership.com/Track/"+trackingNumber+"/json", function(details,status){
+  return new Promise(async function (resolve, reject){
+    $.get(trackingResource+trackingNumber, function(details,status){
+      // console.log(details);
+      // console.log(status);
       if(details){
-        resolve(details.Events)
+        resolve(details.Packages[0].Events)
       }else{
         resolve("ERR: Cant find info")
       }
