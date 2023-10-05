@@ -69,13 +69,15 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 // Configure app to user EJS abd bodyParser
 app.set("view engine", "ejs");
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
 app.use(express.static("public"));
 app.use(express.static(tempFilePath));
 app.use(express.static("."));
-app.use(express.json());
+app.use(express.json({limit: '50mb'}));
+app.use(bodyParser.urlencoded({
+  extended: true,
+  limit: '50mb',
+  parameterLimit: 2000000,
+}));
 
 
 /******************** Authentication Setup & Config *************/
@@ -283,16 +285,17 @@ const reportSchema = new mongoose.Schema({
     drivers:[{
         driverNumber: Number, 
         manifest:[{
-                brand: String,
-                barcode: String,
-                status: {type:{}, default:null},
-                name: String,
-                street: String,
-                city: String,
-                state: String,
-                country: String,
+            brand: String,
+            barcode: String,
+            Events: {type:{}, default:null},
+            name: String,
+            street: String,
+            city: String,
+            state: String,
+            country: String,
         }]
-    }]
+    }],
+    lastUpdated: {type:Date, default:null},
 });
 const Report = reportConn.model("Report", reportSchema);
 var reports;
@@ -778,6 +781,15 @@ app.route(APP_DIRECTORY + "/extractReport")
 app.route(APP_DIRECTORY + "/saveDriverStatus")
   .post(async function (req, res) {
       //save reuest body object to database
+      updatedDrivers = req.body.updatedDrivers;
+      reportID = req.body.reportID;
+      if(updatedDrivers.length > 0){
+        let result = await updateReportWithDrivers(reportID, updatedDrivers);
+        console.error(result);
+        res.send(result)
+      }else{
+        res.send({successfull:false, msg:"Report document with ID :'"+reportID+ "' does not Exist"})
+      }
   })
 
 
@@ -790,7 +802,7 @@ app.route(APP_DIRECTORY + "/getReport")
 
 app.route(APP_DIRECTORY + "/getTrackingResource")
   .get(function (req, res) {
-    console.error(outputDate() + " Hostname: "+req.hostname);
+    // console.error(outputDate() + " Hostname: "+req.hostname);
     if((req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| DEVELOPEMENT){
       res.send(TRACKINGURL)
     }else{
@@ -1591,6 +1603,29 @@ async function updateBrand(brand) {
     )
 
   });
+}
+
+async function updateReportWithDrivers(id, updatedDrivers) {
+  try {
+    // Find the document by its _id
+    const docToUpdate = await Report.findById(id);
+
+    if (!docToUpdate) {
+      console.error('Document not found');
+      return {successfull:false, msg:"Document not found"}
+    }
+
+    // Modify the document with the updated data
+    docToUpdate.drivers = updatedDrivers;
+    docToUpdate.lastUpdated = new Date();
+
+    // Save the updated document
+    const updatedDoc = await docToUpdate.save();
+    console.error('Driver Report updated:', updatedDoc);
+    return {successfull:true, updatedDoc:updatedDoc, msg:"Driver Report updated Succesfully"}
+  } catch (error) {
+    console.error('Error:', error);
+  }
 }
 
 function getToday(){
