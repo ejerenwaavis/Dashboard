@@ -758,7 +758,7 @@ app.get(APP_DIRECTORY + "/hereApiKey", function (req, res) {
 })
 
 
-/* Handling Report REquests */
+/* Handling Report Requests */
 app.route(APP_DIRECTORY + "/extractReport")
   .get(async function (req, res) {
     let url = 'https://triumphcourier.com/mailreader/extract';
@@ -774,6 +774,12 @@ app.route(APP_DIRECTORY + "/extractReport")
   //   res.send(response);
   // });
 })
+
+app.route(APP_DIRECTORY + "/saveDriverStatus")
+  .post(async function (req, res) {
+      //save reuest body object to database
+  })
+
 
 app.route(APP_DIRECTORY + "/getReport")
   .get(async function (req, res) {

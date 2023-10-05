@@ -14,7 +14,8 @@ async function pullReport() {
   $.get(domain + '/getReport', async function (response) {
     console.log('Processing Report');
     console.log(response);
-    await displayReport(response);
+    let driverStatus = await displayReport(response);
+    let savedSucces = await saveDriverStatus(driverStatus);
   $("#pullRequestButton").removeClass("disabled");
   $("#pullRequestButton").html('Pull Request');
   
@@ -22,8 +23,14 @@ async function pullReport() {
 }
 
 async function displayReport(report) {
+  $('#reportDetails tbody').html("")
   let bigHtml="";
-  for await(const driver of report[0].drivers ){
+  let driverStatus = [];
+  let driverCount = 0;
+  let drivers = report[0].drivers;
+  for await(const driver of drivers ){
+    updateLoadStatus(Math.trunc(((driverCount/drivers.length) * 100)));
+    driverCount++;
     let ofd = [];
     let del = [];
     let mls = [];
@@ -38,7 +45,6 @@ async function displayReport(report) {
     let count = 0;
     for await(const stop of driver.manifest){
       console.log((count++)+'/'+driver.manifest.length);
-      updateLoadStatus(Math.trunc(((count/driver.manifest.length) * 100)));
       let info = await getTrackingnInfo(stop.barcode);
       // console.log(info);
       let stopEventTime = (new Date(info[0].UtcEventDateTime)).getTime()
@@ -47,14 +53,18 @@ async function displayReport(report) {
         latestEvent = stopEventTime;
       }
       if(info[0].EventCode === 'DLVD' || info[0].Status === 'Delivered'){
+          stop.Events = info;
           del.push(stop);
       }else if(info[0].EventCode === 'OFDL' || info[0].EventCode === 'OD' || info[0].EventShortDescription === 'Out for delivery.'){
+          stop.Events = info;
           ofd.push(stop);
-          // console.log(info[0]);
+          // console.log(info[0]);  Package scanned at facility.
           // console.log(stop.street);
       }else if(info[0].EventCode === 'NH' || info[0].EventCode === 'BCLD' || info[0].EventShortDescription === 'Delayed. Delivery date updated.' || info[0].Status === 'Pending'){
+          stop.Events = info;
           attempts.push(stop);
-      }else if(info[0].EventCode === 'RD' || info[0].EventCode === 'SFCT' || info[0].EventShortDescription === 'Packaged received at the facility.'){
+      }else if(info[0].EventCode === 'RD' || info[0].EventCode === 'SFCT' || info[0].EventCode === 'LOAD' || info[0].EventShortDescription === 'Packaged received at the facility.' || info[0].EventShortDescription === 'Package scanned at facility.'){
+          stop.Events = info;
           mls.push(stop);
       }else{
         console.log("Cant Process Package: "+ stop.barcode);
@@ -73,10 +83,13 @@ async function displayReport(report) {
                   +'aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">'+progress+'%</div></div></td>';
     html += '<td>'+new Date(latestEvent).toLocaleString()+'</td>';
     html+="</tr>";
+    let quickHtml = html;
     bigHtml += html;
+    $('#reportDetails tbody').append(quickHtml);
+    html="";
+    driverStatus.push({name:driverName, driverNumber:driverNumber, updatedManifes:[mls,ofd,del,attempts]})
   }
-  $('#reportDetails tbody').html("")
-  $('#reportDetails tbody').append(bigHtml);
+  return driverStatus;
 }
 
 
@@ -167,6 +180,22 @@ function getTrackingURL() {
     });
   });
 }
+
+function saveDriverStatus(driverStatus) {
+  return new Promise((resolve, reject) => {
+    let url = domain + '/saveDriverStatus';
+    $.post(url,driverStatus, function(result) {
+      if(result){
+        resolve({successfull:result, msg:"saved driver status"});
+      }else{
+        reject({successfull:result, msg:"Failed to save Driver Status"});
+      }
+    }).fail(function(error) {
+      reject(error);
+    });
+  });
+}
+
 function processManifests() {
   return new Promise((resolve, reject) => {
     let url = 'https://triumphcourier.com/mailreader/extract';
