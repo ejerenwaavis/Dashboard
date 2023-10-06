@@ -2,6 +2,8 @@ let domain = $('#domain').attr('domain');
 let trackingResource = "";
 let drivers = [];
 let clientDeiverStatus = [];
+let eventCodes = [];
+eventCodes.problemStops = [];
 window.onload = async (event) => {
   trackingResource = await getTrackingURL();
   let update = await pullLocalReport();
@@ -88,6 +90,8 @@ async function displayReport(report) {
   let driverStatus = [];
   let driverCount = 0;
   let drivers = report[0].drivers;
+  let totalOnlinePulls = 0;
+
   drivers.lastUpdated = report[0].lastUpdated;
   portions = 100/drivers.length;
   portionsDone = 0;
@@ -121,7 +125,16 @@ async function displayReport(report) {
         console.log("no local events found, puling from external source");
         let info = await getTrackingnInfo(stop.barcode);
         stop.Events = info;
+        totalOnlinePulls++;
+      }else if(stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status === 'Delivered'){
+        console.log("Already Delivered. not puling from external source");
+      }else{
+        let info = await getTrackingnInfo(stop.barcode);
+        stop.Events = info;
+        totalOnlinePulls++;
+        console.log("Pulled Tracking Event on: "+ stop.barcode);
       }
+
       // console.log(stop.Events);
       let stopEventTime = (new Date(stop.Events[0].UtcEventDateTime)).getTime()
       
@@ -132,10 +145,11 @@ async function displayReport(report) {
           del.push(stop);
       }else if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription === 'Out for delivery.'){
           ofd.push(stop);
-      }else if(stop.Events[0].EventCode === 'NH' || stop.Events[0].EventCode === 'NDMI' || stop.Events[0].EventCode === 'BCLD' 
+      }else if(stop.Events[0].EventCode === 'NH' || stop.Events[0].EventCode === 'UTLV' || stop.Events[0].EventCode === 'NDMI' || stop.Events[0].EventCode === 'CR' || stop.Events[0].EventCode === 'BCLD' 
               || stop.Events[0].EventShortDescription === 'Delayed. Delivery date updated.' || stop.Events[0].Status === 'Pending'){
           attempts.push(stop);
-      }else if(stop.Events[0].EventCode === 'RD' || stop.Events[0].EventCode === 'EMAR' || stop.Events[0].EventCode === 'SFCT' 
+      }else if(stop.Events[0].EventCode === 'RD' || stop.Events[0].EventCode === 'UD' || stop.Events[0].EventCode === 'ONHD' || stop.Events[0].EventCode === 'HW' || stop.Events[0].EventCode === 'EMAR' 
+              || stop.Events[0].EventCode === 'SFCT' 
               || stop.Events[0].EventCode === 'LOAD' || stop.Events[0].EventShortDescription === 'Packaged received at the facility.' 
               || stop.Events[0].EventShortDescription === 'Returned. Contact sender.'){
           mls.push(stop);
@@ -143,6 +157,8 @@ async function displayReport(report) {
         console.log("Cant Process Package: "+ stop.barcode);
         problemStops.push(stop);
       }
+      code = {EventCode:stop.Events[0].EventCode, EventShortDescription:stop.Events[0].EventShortDescription};
+      eventCodes.includes(code)? null : eventCodes.push(code);
     }
     let loadNumber = ofd.length + attempts.length + del.length;
     let progress = Math.trunc(((del.length + attempts.length)/loadNumber) * 100);
@@ -164,13 +180,16 @@ async function displayReport(report) {
     }
     $('#reportDetails tbody').append(quickHtml);
     html="";
-    driverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls,ofd:ofd,del:del,attempts:attempts, problemStops:problemStops}})
+    driverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls,ofd:ofd,del:del,attempts:attempts, problemStops:problemStops}});
+    clientDeiverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls,ofd:ofd,del:del,attempts:attempts, problemStops:problemStops}})
     if(problemStops.length > 0){
       console.log("Problem Stops for "+driverName);
       console.log(problemStops);
+      eventCodes.problemStops.push({driverName:driverName, stops:problemStops})
     }
   }
-  clientDeiverStatus = driverStatus;
+  // clientDeiverStatus = driverStatus;
+  console.log("Total Pulls: "+totalOnlinePulls);
   return drivers;
 }
 
@@ -178,12 +197,11 @@ async function showDetailedStops(evt){
   $('#detailModalTable tbody').html("");
   stopType = $(evt).attr("stopType");
   driverNumber = Number($(evt).attr("driverNumber"));
-  stopTypeVariables = getStopStypeVariables(stopType);
   
-  console.log(drivers);
+  // console.log(drivers);
   driver = await clientDeiverStatus.find((d) => d.driverNumber === driverNumber);
   driverName = driver.name;
-  console.log(driver);
+  // console.log(driver);
   stopArray = [];
   console.log(stopArray);
   if(stopType == "mls"){
@@ -230,19 +248,6 @@ async function showDetailedStops(evt){
   "SFCT" = Sprting Facility
 */
 
-async function getStopStypeVariables(stopType){
-  if(stopType === "ofd"){
-    return [];
-  }else if (stopType === "del"){
-    return [];
-  }else if (stopType === "attempts"){
-    return [];
-  }else if (stopType === "load"){
-    return [];
-  }else if (stopType === "mls"){
-    return [];
-  }
-}
 
 function trackPackage() {
   let tracking = $("#barcodeNumber").val().trim();
@@ -357,7 +362,12 @@ function getTrackingnInfo(trackingNumber){
       // console.log(details);
       // console.log(status);
       if(details){
-        resolve(details.Packages[0].Events)
+        let Events = details.Packages[0].Events;
+        if(details.Packages[0].VpodImageString){
+          console.log("stop Has a VPOD");
+          Events.vpod = details.Packages[0].VpodImageString; 
+        }
+        resolve(Events)
       }else{
         resolve("ERR: Cant find info")
       }
@@ -370,3 +380,4 @@ function getTrackingnInfo(trackingNumber){
     })
   });
 }
+
