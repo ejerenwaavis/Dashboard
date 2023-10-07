@@ -62,8 +62,6 @@ const stripe = require("stripe")(STRIPEAPI);
 const session = require("express-session");
 const passport = require('passport');
 const passportLocalMongoose = require("passport-local-mongoose");
-const LocalStrategy = require('passport-local').Strategy;
-const FacebookStrategy = require('passport-facebook').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 
@@ -153,78 +151,9 @@ passport.deserializeUser(function (user, done) {
 });
 
 //telling passprt to use local Strategy
-passport.use(new LocalStrategy(
-  function (username, password, done) {
-    // console.log("Finding user");
-    User.findOne({ _id: username }, function (err, user) {
-      // console.log("dons searching for user");
-      if (err) { console.log(err); return done(err); }
-      if (!user) {
-        console.log("incorrect User name");
-        return done(null, false, { message: 'Incorrect username.' });
-      }
-
-      bcrypt.compare(password, user.password, function (err, result) {
-        if (!err) {
-          if (!result) {
-            console.log("incorrect password");
-            return done(null, false, { message: 'Incorrect password.' });
-          } else {
-            return done(null, user);
-          }
-        } else {
-          // console.log("********some other error *************");
-          console.log(err);
-        }
-      });
-    });
-  }
-));
 
 
 //telling passport to use Facebook Strategy
-passport.use(new FacebookStrategy({
-  clientID: FACEBOOK_APP_ID,
-  clientSecret: FACEBOOK_APP_SECRET,
-  callbackURL: (SERVER) ? "https://triumphcourier.com"+ APP_DIRECTORY+ "/facebookLoggedin" : APP_DIRECTORY + "/facebookLoggedin",  enableProof: true,
-  profileFields: ["birthday", "email", "first_name", 'picture.type(large)', "last_name"]
-},
-  function (accessToken, refreshToken, profile, cb) {
-    let userProfile = profile._json;
-    // console.log("************ FB Profile *******");
-    // console.log(userProfile.picture.data.url);
-    User.findOne({ _id: userProfile.email }, function (err, user) {
-      if (!err) {
-        if (user) {
-          console.log("Logged in as ----> " + user._id);
-          return cb(err, user);
-        } else {
-          let newUser = new User({
-            _id: userProfile.email,
-            username: userProfile.email,
-            firstName: userProfile.first_name,
-            lastName: userProfile.last_name,
-            photoURL: userProfile.picture.data.url,
-          });
-
-          newUser.save()
-            .then(function () {
-              return cb(null, user);
-            })
-            .catch(function (err) {
-              console.log("failed to create user");
-              console.log(err);
-              return cb(new Error(err));
-            });
-        }
-      } else {
-        console.log("***********Internal error*************");
-        console.log(err);
-        return cb(new Error(err));
-      }
-    });
-  }
-));
 
 //telling passport to use GoogleStrategy
 passport.use(new GoogleStrategy({
@@ -766,16 +695,12 @@ app.route(APP_DIRECTORY + "/extractReport")
   .get(async function (req, res) {
     let url = 'https://triumphcourier.com/mailreader/extract';
     
-    // Make a GET request to the API
-  // axios.get(url)
-  // .then((response) => {
-  //   console.log('API Response:', response.data);
-  //   res.send(response);
-  // })
-  // .catch((error) => {
-  //   console.error('Error making the API request:', error);
-  //   res.send(response);
-  // });
+    https.get(url, function(response) {
+      response.on("data", function(data) {
+        console.log(data);
+        const successfull = JSON.parse(data);
+      });
+    });
 })
 
 app.route(APP_DIRECTORY + "/saveDriverStatus")
