@@ -810,6 +810,12 @@ app.route(APP_DIRECTORY + "/getTrackingResource")
     }
 })
 
+app.route(APP_DIRECTORY + "/getPriorityBrands")
+  .get(function (req, res) {
+    res.send(priorityBrands);
+})
+
+
 app.route(APP_DIRECTORY + "/getDriverName/:driverNumber")
   .get(function (req, res) {
     driver = (contractors.filter((c) => c.driverNumber === req.params.driverNumber))[0];
@@ -1661,6 +1667,27 @@ async function keepAlive(){
 function outputDate() {
   return (new Date().toLocaleString()) + " >> ";
 }
+
+
+priorityBrands = [
+  { trackingPrefixes : [], name : 'Eat Clean To Go'},
+  { trackingPrefixes : [], name : 'Coldcart, Inc.'},
+  { trackingPrefixes : [], name : 'Grip Shipping Inc'},
+  { trackingPrefixes : [], name : 'WILD ALASKAN, INC.'},
+  { trackingPrefixes : [], name : 'DAILY HARVEST'},
+  { trackingPrefixes : [], name : "The Farmer's Dog, Inc."},
+  { trackingPrefixes : [], name : 'Butcherbox'},
+  { trackingPrefixes : [], name : 'Zara'},
+  { trackingPrefixes : [], name : 'Zara Home'}, 
+  { trackingPrefixes : [], name : 'SUN BASKET'}, 
+  { trackingPrefixes : [], name : 'GOBBLE INC'}, 
+  { trackingPrefixes : [], name : 'WALMART'}, 
+  { trackingPrefixes : [], name : 'CORPORATE PAYROLL SERVICES'}, 
+  { trackingPrefixes : [], name : 'PAYCHEX'}, 
+  { trackingPrefixes : [], name : 'ADP'}, 
+  { trackingPrefixes : [], name : 'eGourmet Solutions Inc.'}, 
+]
+
 
 contractors = [
   { driverNumber : '203593', name : 'Frankie ROBINSON'},

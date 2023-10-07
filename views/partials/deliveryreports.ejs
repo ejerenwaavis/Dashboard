@@ -6,9 +6,9 @@
                 |
                 <h6 id="lastUpdated" class="placard-title text-mute col d-inline"></h6>
             </div>
-            <div class="py-2">
-                <button onclick="pullReport()" id="pullRequestButton" class="btn btn-sm btn-secondary disabled">Pull
-                    Reports</button>
+            <div  class="py-2 btn-group" role="group" >
+                <button onclick="pullReport()" id="pullRequestButton" class="btn btn-sm btn-secondary disabled">Pull Reports</button>
+                <button type="button" onclick="stopOullingProcess()" class="btn btn-sm btn-outline-secondary"> X </button>
             </div>
         </div>
     </div>
@@ -17,7 +17,7 @@
             <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="display-1 fs-1 fw-medium text-capitalize" id="detailsHeader">
+                        <h5 class="fs-5 fw-bold text-capitalize" id="detailsHeader">
                             Username</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -51,8 +51,8 @@
                         <td>NAME</td>
                         <td>LOAD</td>
                         <td>OFD</td>
+                        <td>POFD</td>
                         <td>DEL</td>
-                        <td>REC</td>
                         <td>MLS</td>
                         <td>ATTEMPTS</td>
                         <td>PROGRESS</td>
