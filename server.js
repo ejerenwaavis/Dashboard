@@ -496,11 +496,11 @@ app.route(APP_DIRECTORY + "/getDriverName/:driverNumber")
 
 
 
-app.route(APP_DIRECTORY + "/error")
-  .get(async function (req, res) {
-    throwFalseError();
-    res.send("error thrown! did you get it?");
-})
+// app.route(APP_DIRECTORY + "/error")
+//   .get(async function (req, res) {
+//     throwFalseError();
+//     res.send("error thrown! did you get it?");
+// })
 
 
 
