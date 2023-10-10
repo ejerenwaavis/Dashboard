@@ -27,6 +27,9 @@ async function pullReport() {
     if(response.length > 0){
       console.log('Processing Report');
       console.log(response);
+      totalStops = await response[0].drivers.reduce((accumulator, driver) => {
+                        return accumulator + driver.manifest.length;
+                      }, 0);
       let updatedDrivers = await displayReport(response);
       drivers = updatedDrivers;
       updateLoadStatus("Saving Updates...")
@@ -63,7 +66,7 @@ async function pullLocalReport() {
       console.log('Processing Local Report');
       console.log(response);
       if(response[0].lastUpdated != null){
-        totalStops = response[0].drivers.reduce((accumulator, driver) => {
+        totalStops = await response[0].drivers.reduce((accumulator, driver) => {
                         return accumulator + driver.manifest.length;
                       }, 0);
         // console.log("total Stop Count is: "+ totalStops);
@@ -117,8 +120,10 @@ async function displayReport(report) {
     let pofd = [];
     let del = [];
     let mls = [];
+    let pmls = [];
     let load = [];
     let attempts = [];
+    let pattempts = [];
     let problemStops = [];
     let html = '<tr class="table-bordered">';
     html += '<td>'+driver.driverNumber+'</td>';
@@ -142,7 +147,7 @@ async function displayReport(report) {
         let info = await getTrackingnInfo(stop.barcode);
         stop.Events = info;
         totalOnlinePulls++;
-      }else if(stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status === 'Delivered' || stop.Events[0].EventShortDescription === 'Delivered.'){
+      }else if(stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.')){
         // console.log("Already Delivered. not puling from external source");
       }else{
         let info = await getTrackingnInfo(stop.barcode);
@@ -159,19 +164,24 @@ async function displayReport(report) {
       }
 
       if(stop.lastScan){ // this makes sure that only pieces that wew scanned are taken into consideration of displaying on delivered or attempts...e.t.c 
-        if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status === 'Delivered' || stop.Events[0].EventShortDescription === 'Delivered.')){
+        if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.'))){
             del.push(stop);
-        }else if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription === 'Out for delivery.'){
-            const containsPriority = priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
+        }else if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription.includes('Out for delivery.')){
+            const containsPriority = await priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
             if(containsPriority){
               pofd.push(stop);
             }else{
               ofd.push(stop);
             }
         }else if(stop.Events[0].EventCode === 'NH' || stop.Events[0].EventCode === 'UTLV' || stop.Events[0].EventCode === 'NDMI' || stop.Events[0].EventCode === 'BCLD' 
-                || ((stop.Events[0].Status === 'Pending' 
-                || stop.Events[0].EventShortDescription === 'Delayed. Delivery date updated.' ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
+                || ((stop.Events[0].Status.includes('Pending')
+                || stop.Events[0].EventShortDescription.includes('Delayed. Delivery date updated.') ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
+            const isPriorityPackage = await isPriority(stop);
+            if(isPriorityPackage){
+              pattempts.push(stop);
+            }else{
               attempts.push(stop);
+            }
         }else if(stop.Events[0].EventCode === 'RD' 
                 || stop.Events[0].EventCode === 'UD' 
                 || stop.Events[0].EventCode === 'ONHD'
@@ -183,34 +193,54 @@ async function displayReport(report) {
                 || stop.Events[0].EventCode === 'SFCT' 
                 || stop.Events[0].EventCode === 'LOAD'
                 || stop.Events[0].EventCode === 'CR'
-                || stop.Events[0].Status === 'Returned'
-                || stop.Events[0].Status === 'Undeliverable'
-                || stop.Events[0].EventShortDescription === 'Packaged received at the facility.' 
-                || stop.Events[0].EventShortDescription === 'Returned. Contact sender.'
-                || stop.Events[0].EventShortDescription === 'Damaged. Contact sender.'){
-            mls.push(stop);
+                || stop.Events[0].Status.includes('Returned')
+                || stop.Events[0].Status.includes('Undeliverable')
+                || stop.Events[0].EventShortDescription.includes('Packaged received at the facility.') 
+                || stop.Events[0].EventShortDescription.includes('Returned. Contact sender.')
+                || stop.Events[0].EventShortDescription.includes('Damaged. Contact sender.')){
+            const isPriorityPackage = await isPriority(stop);
+            if(isPriorityPackage){
+              pmls.push(stop);
+            }else{
+              mls.push(stop);
+            }
         }else{
           console.log("Cant Process Package: "+ stop.barcode);
           problemStops.push(stop);
         }
       }else{ //add whaever that doesent have a lst scanned on it to MLS and edit the status to show that.
-        if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status === 'Delivered' || stop.Events[0].EventShortDescription === 'Delivered.')){
+        if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.'))){
+          if(!stop.Events[0].Status.includes("MLS"))
           stop.Events[0].Status = stop.Events[0].Status + ' | MLS';  
-          mls.push(stop);
+          const isPriorityPackage = await isPriority(stop);
+            if(isPriorityPackage){
+              pmls.push(stop);
+            }else{
+              mls.push(stop);
+            }
         }else if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription === 'Out for delivery.'){
             const containsPriority = priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
             if(containsPriority){
+              if(!stop.Events[0].Status.includes("MLS"))
               stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
-              mls.push(stop);
+
+              pmls.push(stop);
             }else{
+              if(!stop.Events[0].Status.includes("MLS"))
               stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
               mls.push(stop);
             }
         }else if(stop.Events[0].EventCode === 'NH' || stop.Events[0].EventCode === 'UTLV' || stop.Events[0].EventCode === 'NDMI' || stop.Events[0].EventCode === 'BCLD' 
                 || ((stop.Events[0].Status === 'Pending' 
                 || stop.Events[0].EventShortDescription === 'Delayed. Delivery date updated.' ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
+              if(!stop.Events[0].Status.includes("MLS"))
               stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
-              mls.push(stop);
+              const isPriorityPackage = await isPriority(stop);
+              if(isPriorityPackage){
+                pmls.push(stop);
+              }else{
+                mls.push(stop);
+              }
         }else if(stop.Events[0].EventCode === 'RD' 
                 || stop.Events[0].EventCode === 'UD' 
                 || stop.Events[0].EventCode === 'ONHD'
@@ -224,11 +254,17 @@ async function displayReport(report) {
                 || stop.Events[0].EventCode === 'CR'
                 || stop.Events[0].Status === 'Returned'
                 || stop.Events[0].Status === 'Undeliverable'
-                || stop.Events[0].EventShortDescription === 'Packaged received at the facility.' 
-                || stop.Events[0].EventShortDescription === 'Returned. Contact sender.'
-                || stop.Events[0].EventShortDescription === 'Damaged. Contact sender.'){
+                || stop.Events[0].EventShortDescription.includes('Packaged received at the facility.') 
+                || stop.Events[0].EventShortDescription.includes('Returned. Contact sender.')
+                || stop.Events[0].EventShortDescription.includes('Damaged. Contact sender.')){
+            if(!stop.Events[0].Status.includes("MLS"))
             stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
-            mls.push(stop);
+            const isPriorityPackage = await isPriority(stop);
+            if(isPriorityPackage){
+              pmls.push(stop);
+            }else{
+              mls.push(stop);
+            }
         }else{
           console.log("Cant Process Package: "+ stop.barcode);
           problemStops.push(stop);
@@ -245,9 +281,9 @@ async function displayReport(report) {
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="ofd" onclick="showDetailedStops(this)">'+ ofd.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="pofd" onclick="showDetailedStops(this)">'+ pofd.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="del" onclick="showDetailedStops(this)">'+ del.length +'</a></td>';
-    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="mls" onclick="showDetailedStops(this)">'+ mls.length +'</a></td>';
-    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="attempts" onclick="showDetailedStops(this)">'+ attempts.length +'</a></td>';
-    html += '<td> <div class="progress bg-secondary"> <div class="progress-bar bg-success" role="progressbar" style="width: '+progress+'%;"'
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="attempts" onclick="showDetailedStops(this)">'+ (pattempts.length + attempts.length) +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="mls" onclick="showDetailedStops(this)">'+ (pmls.length + mls.length) +'</a></td>';
+    html += '<td> <div class="progress bg-secondary"> <div class="progress-bar '+(progress > 99? "bg-success" : ((progress > 30) ? "bg-warning": "bg-danger"))+'" role="progressbar" style="width: '+progress+'%;"'
                   +'aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">'+progress+'%</div></div></td>';
     html += '<td>'+new Date(latestEvent).toLocaleString()+'</td>';
     html+="</tr>";
@@ -258,8 +294,9 @@ async function displayReport(report) {
     }
     $('#reportDetails tbody').append(quickHtml);
     html="";
-    driverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls,ofd:ofd,del:del,attempts:attempts, problemStops:problemStops}});
-    clientDeiverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls,ofd:ofd, pofd:pofd,del:del,attempts:attempts, problemStops:problemStops}})
+    // driverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls,ofd:ofd,del:del,attempts:attempts, problemStops:problemStops}});
+    // driverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}})
+    clientDeiverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}})
   }
   // clientDeiverStatus = driverStatus;
   console.log("Total Pulls: "+totalOnlinePulls);
@@ -281,24 +318,24 @@ async function showDetailedStops(evt){
   stopArray = [];
   // console.log(stopArray);
   if(stopType == "mls"){
-    stopArray = driver.updatedManifest.mls;
+    stopArray = [...driver.updatedManifest.pmls,...driver.updatedManifest.mls];
   }else if (stopType == "ofd"){
     stopArray = driver.updatedManifest.ofd;
   }else if (stopType == "pofd"){
     stopArray = driver.updatedManifest.pofd;
   }else if (stopType == "load"){
-    stopArray = [...driver.updatedManifest.ofd,...driver.updatedManifest.del,...driver.updatedManifest.attempts];
+    stopArray = [...driver.updatedManifest.pofd,...driver.updatedManifest.ofd,...driver.updatedManifest.del,...driver.updatedManifest.pattempts,...driver.updatedManifest.attempts];
   }else if (stopType == "del"){
     stopArray = driver.updatedManifest.del;
   }else if (stopType == "attempts"){
-    stopArray = driver.updatedManifest.attempts;
+    stopArray = [...driver.updatedManifest.pattempts,...driver.updatedManifest.attempts];
   }else if (stopType == "problemStops"){
     stopArray = driver.updatedManifest.problemStops;
   }
   
   for await (const stop of stopArray){
     let html = '<tr class="table-bordered">';
-    html += '<td> '+(stop.barcode)+'</td>';
+    html += '<td> <a class="link-secondary link-offset-2" href="https://triumphcourier.com/barcodetool/track/'+(stop.barcode)+'" target="_blank">'+(stop.barcode)+' <i class="bi bi-search"></i></a></td>';
     html += '<td> '+ stop.brand +'</td>';
     html += '<td> '+ stop.name +'</td>';
     html += '<td>'+ stop.street +'</td>';
@@ -476,3 +513,14 @@ function getTrackingnInfo(trackingNumber){
   });
 }
 
+
+
+async function isPriority(stop) {
+  if(priorityBrands !=null){
+    result = await priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
+    return result;
+  }else{
+    console.log("Unable to Check for Priority");
+    return false;
+  }
+}
