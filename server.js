@@ -216,6 +216,7 @@ const reportSchema = new mongoose.Schema({
         manifest:[{
             brand: String,
             barcode: String,
+            lastScan: String,
             Events: {type:{}, default:null},
             name: String,
             street: String,

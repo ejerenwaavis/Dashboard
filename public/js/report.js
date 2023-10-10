@@ -136,6 +136,7 @@ async function displayReport(report) {
         break;
       }
       // console.log((count++)+'/'+driver.manifest.length);
+
       if(!stop.Events){
         console.log("no local events found, puling from external source");
         let info = await getTrackingnInfo(stop.barcode);
@@ -156,37 +157,82 @@ async function displayReport(report) {
       if(stopEventTime > latestEvent){
         latestEvent = stopEventTime;
       }
-      if(stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status === 'Delivered' || stop.Events[0].EventShortDescription === 'Delivered.'){
-          del.push(stop);
-      }else if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription === 'Out for delivery.'){
-          const containsPriority = priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
-          if(containsPriority){
-            pofd.push(stop);
-          }else{
-            ofd.push(stop);
-          }
-      }else if(stop.Events[0].EventCode === 'NH' || stop.Events[0].EventCode === 'UTLV' || stop.Events[0].EventCode === 'NDMI' || stop.Events[0].EventCode === 'BCLD' 
-              || ((stop.Events[0].Status === 'Pending' 
-              || stop.Events[0].EventShortDescription === 'Delayed. Delivery date updated.' ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
-          attempts.push(stop);
-      }else if(stop.Events[0].EventCode === 'RD' 
-              || stop.Events[0].EventCode === 'UD' 
-              || stop.Events[0].EventCode === 'ONHD' 
-              || stop.Events[0].EventCode === 'HW'
-              || stop.Events[0].EventCode === 'DWDD'
-              || stop.Events[0].EventCode === 'EMAR' 
-              || stop.Events[0].EventCode === 'RB' 
-              || stop.Events[0].EventCode === 'SFCT' 
-              || stop.Events[0].EventCode === 'LOAD'
-              || stop.Events[0].EventCode === 'CR'
-              || stop.Events[0].Status === 'Returned'
-              || stop.Events[0].EventShortDescription === 'Packaged received at the facility.' 
-              || stop.Events[0].EventShortDescription === 'Returned. Contact sender.'
-              || stop.Events[0].EventShortDescription === 'Damaged. Contact sender.'){
+
+      if(stop.lastScan){ // this makes sure that only pieces that wew scanned are taken into consideration of displaying on delivered or attempts...e.t.c 
+        if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status === 'Delivered' || stop.Events[0].EventShortDescription === 'Delivered.')){
+            del.push(stop);
+        }else if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription === 'Out for delivery.'){
+            const containsPriority = priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
+            if(containsPriority){
+              pofd.push(stop);
+            }else{
+              ofd.push(stop);
+            }
+        }else if(stop.Events[0].EventCode === 'NH' || stop.Events[0].EventCode === 'UTLV' || stop.Events[0].EventCode === 'NDMI' || stop.Events[0].EventCode === 'BCLD' 
+                || ((stop.Events[0].Status === 'Pending' 
+                || stop.Events[0].EventShortDescription === 'Delayed. Delivery date updated.' ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
+              attempts.push(stop);
+        }else if(stop.Events[0].EventCode === 'RD' 
+                || stop.Events[0].EventCode === 'UD' 
+                || stop.Events[0].EventCode === 'ONHD'
+                || stop.Events[0].EventCode === 'LOST'
+                || stop.Events[0].EventCode === 'HW'
+                || stop.Events[0].EventCode === 'DWDD'
+                || stop.Events[0].EventCode === 'EMAR' 
+                || stop.Events[0].EventCode === 'RB' 
+                || stop.Events[0].EventCode === 'SFCT' 
+                || stop.Events[0].EventCode === 'LOAD'
+                || stop.Events[0].EventCode === 'CR'
+                || stop.Events[0].Status === 'Returned'
+                || stop.Events[0].Status === 'Undeliverable'
+                || stop.Events[0].EventShortDescription === 'Packaged received at the facility.' 
+                || stop.Events[0].EventShortDescription === 'Returned. Contact sender.'
+                || stop.Events[0].EventShortDescription === 'Damaged. Contact sender.'){
+            mls.push(stop);
+        }else{
+          console.log("Cant Process Package: "+ stop.barcode);
+          problemStops.push(stop);
+        }
+      }else{ //add whaever that doesent have a lst scanned on it to MLS and edit the status to show that.
+        if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status === 'Delivered' || stop.Events[0].EventShortDescription === 'Delivered.')){
+          stop.Events[0].Status = stop.Events[0].Status + ' | MLS';  
           mls.push(stop);
-      }else{
-        console.log("Cant Process Package: "+ stop.barcode);
-        problemStops.push(stop);
+        }else if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription === 'Out for delivery.'){
+            const containsPriority = priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
+            if(containsPriority){
+              stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+              mls.push(stop);
+            }else{
+              stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+              mls.push(stop);
+            }
+        }else if(stop.Events[0].EventCode === 'NH' || stop.Events[0].EventCode === 'UTLV' || stop.Events[0].EventCode === 'NDMI' || stop.Events[0].EventCode === 'BCLD' 
+                || ((stop.Events[0].Status === 'Pending' 
+                || stop.Events[0].EventShortDescription === 'Delayed. Delivery date updated.' ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
+              stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+              mls.push(stop);
+        }else if(stop.Events[0].EventCode === 'RD' 
+                || stop.Events[0].EventCode === 'UD' 
+                || stop.Events[0].EventCode === 'ONHD'
+                || stop.Events[0].EventCode === 'LOST'
+                || stop.Events[0].EventCode === 'HW'
+                || stop.Events[0].EventCode === 'DWDD'
+                || stop.Events[0].EventCode === 'EMAR' 
+                || stop.Events[0].EventCode === 'RB' 
+                || stop.Events[0].EventCode === 'SFCT' 
+                || stop.Events[0].EventCode === 'LOAD'
+                || stop.Events[0].EventCode === 'CR'
+                || stop.Events[0].Status === 'Returned'
+                || stop.Events[0].Status === 'Undeliverable'
+                || stop.Events[0].EventShortDescription === 'Packaged received at the facility.' 
+                || stop.Events[0].EventShortDescription === 'Returned. Contact sender.'
+                || stop.Events[0].EventShortDescription === 'Damaged. Contact sender.'){
+            stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+            mls.push(stop);
+        }else{
+          console.log("Cant Process Package: "+ stop.barcode);
+          problemStops.push(stop);
+        }
       }
       code = {EventCode:stop.Events[0].EventCode, EventShortDescription:stop.Events[0].EventShortDescription};
       
