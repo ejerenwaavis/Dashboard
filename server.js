@@ -64,7 +64,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 // Configure app to user EJS abd bodyParser
 app.set("view engine", "ejs");
-app.use(express.static("public"));
+app.use(express.static(__dirname+"/public"));
 app.use(express.static(tempFilePath));
 app.use(express.static("."));
 app.use(express.json({limit: '50mb'}));
