@@ -5,6 +5,7 @@ let drivers = [];
 let clientDeiverStatus = [];
 let totalStops = 0;
 let stopCount = 0;
+let totalOnlinePulls = 0;
 let eventCodes = [];
 let stopReportPull = false;
 let pullFromServer = false;
@@ -76,8 +77,14 @@ async function pullLocalReport() {
         // console.log("total Stop Count is: "+ totalStops);
         updatdReport = await displayReport(response);
         drivers = updatdReport;
-        updateLoadStatus("Saving Changes...")
-        let result = await saveDriverStatus(response[0]._id, updatdReport);
+        let result = {successfull:false};
+        if(totalOnlinePulls > 0){
+          updateLoadStatus("Saving Changes...")
+          result = await saveDriverStatus(response[0]._id, updatdReport);
+        }else{
+          updateLoadStatus("Finalizing Local Report...")
+        }
+
         if(result.successfull){
           $('#lastUpdated').text(' Last Updated: ' + new Date(result.updatedDoc.lastUpdated).toLocaleString());
           // console.log(result);
@@ -85,7 +92,7 @@ async function pullLocalReport() {
           console.log('Saved Online Copy Successsfully');
         }else{
            pullFromServer = false;
-          console.log('Failed to Save Online Copy');
+          console.log('Failed to Save Online Copy : ' + (result.successfull ? result : "No changes - Total Pulls = "+totalOnlinePulls));
         }
         // console.log(updatdReport);
         if(updatdReport.lastUpdated){
@@ -118,7 +125,7 @@ async function displayReport(report) {
   let driverStatus = [];
   let driverCount = 0;
   let drivers = report[0].drivers;
-  let totalOnlinePulls = 0;
+  totalOnlinePulls = 0;
   stopCount = 0;
   mslEvents = ['ONHD','HW','DWDD','EMAR','RB','LOAD','SFCT','Returned','CR'];
 
@@ -309,11 +316,11 @@ async function displayReport(report) {
     let progress = Math.trunc(((del.length + attempts.length)/loadNumber) * 100);
     html += '<td>'+driverName+'</td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="load" onclick="showDetailedStops(this)">'+(loadNumber)+'</a></td>';
-    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="ofd" onclick="showDetailedStops(this)">'+ ofd.length +'</a></td>';
-    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="pofd" onclick="showDetailedStops(this)">'+ pofd.length +'</a></td>';
-    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="del" onclick="showDetailedStops(this)">'+ del.length +'</a></td>';
-    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="attempts" onclick="showDetailedStops(this)">'+ (pattempts.length + attempts.length) +'</a></td>';
-    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="mls" onclick="showDetailedStops(this)">'+ (pmls.length + mls.length) +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="ofd" '+(ofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ ofd.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="pofd" '+(pofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ pofd.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="del" '+(del.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ del.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0 '+(pattempts.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="attempts" '+((pattempts.length + attempts.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pattempts.length + attempts.length) +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0 '+(pmls.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="mls" '+((pattempts.length + attempts.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pmls.length + mls.length) +'</a></td>';
     html += '<td> <div class="progress bg-secondary"> <div class="progress-bar '+(progress > 99? "bg-success" : ((progress > 30) ? "bg-warning": "bg-danger"))+'" role="progressbar" style="width: '+progress+'%;"'
                   +'aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">'+progress+'%</div></div></td>';
     html += '<td>'+new Date(latestEvent).toLocaleString()+'</td>';
@@ -341,7 +348,7 @@ async function showDetailedStops(evt){
   $('#detailModalTable tbody').html("");
   stopType = $(evt).attr("stopType");
   driverNumber = Number($(evt).attr("driverNumber"));
-  
+
   // console.log(drivers);
   driver = await clientDeiverStatus.find((d) => d.driverNumber === driverNumber);
   driverName = driver.name;
@@ -366,7 +373,8 @@ async function showDetailedStops(evt){
   
   for await (const stop of stopArray){
     let html = '<tr class="table-bordered">';
-    html += '<td> <a class="link-secondary link-offset-2" href="https://triumphcourier.com/barcodetool/track/'+(stop.barcode)+'" target="_blank">'+(stop.barcode)+' <i class="bi bi-search"></i></a></td>';
+    let barcodeColor = (await (isPriority(stop))) ? "link-danger" : "link-secondary";  
+    html += '<td> <a class="'+barcodeColor+' link-offset-2" href="https://triumphcourier.com/barcodetool/track/'+(stop.barcode)+'" target="_blank">'+(stop.barcode)+' <i class="bi bi-search"></i></a></td>';
     html += '<td> '+ stop.brand +'</td>';
     html += '<td> '+ stop.name +'</td>';
     html += '<td>'+ stop.street +'</td>';
