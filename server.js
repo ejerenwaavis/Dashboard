@@ -50,13 +50,10 @@ const ejs = require("ejs");
 const papa = require("papaparse");
 const bodyParser = require("body-parser");
 const fs = require("fs");
-// const fsp = require('fs/promises');
 const path = require("path");
 const Excel = require('exceljs');
 const formidable = require('formidable');
 const mongoose = require("mongoose");
-const bcrypt = require('bcrypt');
-// const nodemailer = require('nodemailer');
 const stripe = require("stripe")(STRIPEAPI);
 
 const session = require("express-session");
