@@ -7,6 +7,7 @@ let totalStops = 0;
 let stopCount = 0;
 let eventCodes = [];
 let stopReportPull = false;
+let pullFromServer = false;
 eventCodes.problemStops = [];
 
 
@@ -19,6 +20,7 @@ window.onload = async (event) => {
 
 async function pullReport() {
   stopReportPull = false;
+  pullFromServer = true;
   $("#pullRequestButton").addClass("disabled");
   $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="report-process-status" role="status">Loading...</span></span>');
   // let manifestProcessing = await processManifests();
@@ -37,8 +39,10 @@ async function pullReport() {
       if(result.successfull){
         $('#lastUpdated').text(' Last Updated: ' + new Date(result.updatedDoc.lastUpdated).toLocaleString());
         // console.log(result);
+        pullFromServer = false;
         console.log('Saved Online Copy Successsfully');
       }else{
+        pullFromServer = false;
         console.error('Failed to save Online version');
       }
       $("#pullRequestButton").removeClass("disabled");
@@ -72,6 +76,17 @@ async function pullLocalReport() {
         // console.log("total Stop Count is: "+ totalStops);
         updatdReport = await displayReport(response);
         drivers = updatdReport;
+        updateLoadStatus("Saving Changes...")
+        let result = await saveDriverStatus(response[0]._id, updatdReport);
+        if(result.successfull){
+          $('#lastUpdated').text(' Last Updated: ' + new Date(result.updatedDoc.lastUpdated).toLocaleString());
+          // console.log(result);
+          pullFromServer = false;
+          console.log('Saved Online Copy Successsfully');
+        }else{
+           pullFromServer = false;
+          console.log('Failed to Save Online Copy');
+        }
         // console.log(updatdReport);
         if(updatdReport.lastUpdated){
           $('#lastUpdated').text(' Last Updated: ' + new Date(updatdReport.lastUpdated).toLocaleString());
@@ -135,144 +150,160 @@ async function displayReport(report) {
     let count = 0;
     for await(const stop of driver.manifest){
       stopCount ++;
-    updateLoadStatus((Math.trunc(((stopCount/totalStops) * 100))) + "% Loading...");
+      updateLoadStatus((Math.trunc(((stopCount/totalStops) * 100))) + "% Loading...");
       if(stopReportPull){
         console.log("broke outta stop loop");
         break;
       }
       // console.log((count++)+'/'+driver.manifest.length);
 
-      if(!stop.Events){
-        console.log("no local events found, puling from external source");
-        let info = await getTrackingnInfo(stop.barcode);
-        stop.Events = info;
-        totalOnlinePulls++;
-      }else if(stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.')){
-        // console.log("Already Delivered. not puling from external source");
-      }else{
-        let info = await getTrackingnInfo(stop.barcode);
-        stop.Events = info;
-        totalOnlinePulls++;
-        // console.log(stop);
-      }
-
-      // console.log(stop.Events);
-      let stopEventTime = (new Date(stop.Events[0].UtcEventDateTime)).getTime()
-      
-      if(stopEventTime > latestEvent){
-        latestEvent = stopEventTime;
-      }
-
-      if(stop.lastScan){ // this makes sure that only pieces that wew scanned are taken into consideration of displaying on delivered or attempts...e.t.c 
-        if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.'))){
-            del.push(stop);
-        }else if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription.includes('Out for delivery.')){
-            const containsPriority = await priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
-            if(containsPriority){
-              pofd.push(stop);
+      try {
+        if(stop.Events != 404){
+          if(!stop.Events){
+            console.log("no local events found, puling from external source");
+            let info = await getTrackingnInfo(stop.barcode);
+            if(info != 'ERR_CONNECTION_RESET'){
+              stop.Events = info;
             }else{
-              ofd.push(stop);
+              stop.Events = 404;
             }
-        }else if(stop.Events[0].EventCode === 'NH' || stop.Events[0].EventCode === 'UTLV' || stop.Events[0].EventCode === 'NDMI' || stop.Events[0].EventCode === 'BCLD' 
-                || ((stop.Events[0].Status.includes('Pending')
-                || stop.Events[0].EventShortDescription.includes('Delayed. Delivery date updated.') ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
-            const isPriorityPackage = await isPriority(stop);
-            if(isPriorityPackage){
-              pattempts.push(stop);
+            totalOnlinePulls++;
+          }else if(stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.')){
+            console.log("Already Delivered. not puling from external source");
+          }else if(pullFromServer){
+            let info = await getTrackingnInfo(stop.barcode);
+            if(info != 'ERR_CONNECTION_RESET'){
+              stop.Events = info;
             }else{
-              attempts.push(stop);
+              stop.Events = 404;
             }
-        }else if(stop.Events[0].EventCode === 'RD' 
-                || stop.Events[0].EventCode === 'UD' 
-                || stop.Events[0].EventCode === 'ONHD'
-                || stop.Events[0].EventCode === 'LOST'
-                || stop.Events[0].EventCode === 'HW'
-                || stop.Events[0].EventCode === 'DWDD'
-                || stop.Events[0].EventCode === 'EMAR' 
-                || stop.Events[0].EventCode === 'RB' 
-                || stop.Events[0].EventCode === 'SFCT' 
-                || stop.Events[0].EventCode === 'LOAD'
-                || stop.Events[0].EventCode === 'CR'
-                || stop.Events[0].Status.includes('Returned')
-                || stop.Events[0].Status.includes('Undeliverable')
-                || stop.Events[0].EventShortDescription.includes('Packaged received at the facility.') 
-                || stop.Events[0].EventShortDescription.includes('Returned. Contact sender.')
-                || stop.Events[0].EventShortDescription.includes('Damaged. Contact sender.')){
-            const isPriorityPackage = await isPriority(stop);
-            if(isPriorityPackage){
-              pmls.push(stop);
-            }else{
-              mls.push(stop);
-            }
-        }else{
-          console.log("Cant Process Package: "+ stop.barcode);
-          problemStops.push(stop);
+            totalOnlinePulls++;
+            // console.log(stop);
+          }
         }
-      }else{ //add whaever that doesent have a lst scanned on it to MLS and edit the status to show that.
-        if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.'))){
-          if(!stop.Events[0].Status.includes("MLS"))
-          stop.Events[0].Status = stop.Events[0].Status + ' | MLS';  
-          const isPriorityPackage = await isPriority(stop);
-            if(isPriorityPackage){
-              pmls.push(stop);
-            }else{
-              mls.push(stop);
-            }
-        }else if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription === 'Out for delivery.'){
-            const containsPriority = priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
-            if(containsPriority){
-              if(!stop.Events[0].Status.includes("MLS"))
-              stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
 
-              pmls.push(stop);
+        if(stop.Events != 404){
+            // console.log(stop.Events);
+          let stopEventTime = (new Date(stop.Events[0].UtcEventDateTime)).getTime()
+          
+          if(stopEventTime > latestEvent){
+            latestEvent = stopEventTime;
+          }
+
+          if(stop.lastScan){ // this makes sure that only pieces that wew scanned are taken into consideration of displaying on delivered or attempts...e.t.c 
+            if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.'))){
+                del.push(stop);
+            }else if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription.includes('Out for delivery.')){
+                const containsPriority = await priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
+                if(containsPriority){
+                  pofd.push(stop);
+                }else{
+                  ofd.push(stop);
+                }
+            }else if(stop.Events[0].EventCode === 'NH' || stop.Events[0].EventCode === 'UTLV' || stop.Events[0].EventCode === 'NDMI' || stop.Events[0].EventCode === 'BCLD' 
+                    || ((stop.Events[0].Status.includes('Pending')
+                    || stop.Events[0].EventShortDescription.includes('Delayed. Delivery date updated.') ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
+                const isPriorityPackage = await isPriority(stop);
+                if(isPriorityPackage){
+                  pattempts.push(stop);
+                }else{
+                  attempts.push(stop);
+                }
+            }else if(stop.Events[0].EventCode === 'RD' 
+                    || stop.Events[0].EventCode === 'UD' 
+                    || stop.Events[0].EventCode === 'ONHD'
+                    || stop.Events[0].EventCode === 'LOST'
+                    || stop.Events[0].EventCode === 'HW'
+                    || stop.Events[0].EventCode === 'DWDD'
+                    || stop.Events[0].EventCode === 'EMAR' 
+                    || stop.Events[0].EventCode === 'RB' 
+                    || stop.Events[0].EventCode === 'SFCT' 
+                    || stop.Events[0].EventCode === 'LOAD'
+                    || stop.Events[0].EventCode === 'CR'
+                    || stop.Events[0].Status.includes('Returned')
+                    || stop.Events[0].Status.includes('Undeliverable')
+                    || stop.Events[0].EventShortDescription.includes('Packaged received at the facility.') 
+                    || stop.Events[0].EventShortDescription.includes('Returned. Contact sender.')
+                    || stop.Events[0].EventShortDescription.includes('Damaged. Contact sender.')){
+                const isPriorityPackage = await isPriority(stop);
+                if(isPriorityPackage){
+                  pmls.push(stop);
+                }else{
+                  mls.push(stop);
+                }
             }else{
-              if(!stop.Events[0].Status.includes("MLS"))
-              stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
-              mls.push(stop);
+              console.log("Cant Process Package: "+ stop.barcode);
+              problemStops.push(stop);
             }
-        }else if(stop.Events[0].EventCode === 'NH' || stop.Events[0].EventCode === 'UTLV' || stop.Events[0].EventCode === 'NDMI' || stop.Events[0].EventCode === 'BCLD' 
-                || ((stop.Events[0].Status === 'Pending' 
-                || stop.Events[0].EventShortDescription === 'Delayed. Delivery date updated.' ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
+          }else{ //add whaever that doesent have a lst scanned on it to MLS and edit the status to show that.
+            if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.'))){
               if(!stop.Events[0].Status.includes("MLS"))
-              stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+              stop.Events[0].Status = stop.Events[0].Status + ' | MLS';  
               const isPriorityPackage = await isPriority(stop);
-              if(isPriorityPackage){
-                pmls.push(stop);
-              }else{
-                mls.push(stop);
-              }
-        }else if(stop.Events[0].EventCode === 'RD' 
-                || stop.Events[0].EventCode === 'UD' 
-                || stop.Events[0].EventCode === 'ONHD'
-                || stop.Events[0].EventCode === 'LOST'
-                || stop.Events[0].EventCode === 'HW'
-                || stop.Events[0].EventCode === 'DWDD'
-                || stop.Events[0].EventCode === 'EMAR' 
-                || stop.Events[0].EventCode === 'RB' 
-                || stop.Events[0].EventCode === 'SFCT' 
-                || stop.Events[0].EventCode === 'LOAD'
-                || stop.Events[0].EventCode === 'CR'
-                || stop.Events[0].Status === 'Returned'
-                || stop.Events[0].Status === 'Undeliverable'
-                || stop.Events[0].EventShortDescription.includes('Packaged received at the facility.') 
-                || stop.Events[0].EventShortDescription.includes('Returned. Contact sender.')
-                || stop.Events[0].EventShortDescription.includes('Damaged. Contact sender.')){
-            if(!stop.Events[0].Status.includes("MLS"))
-            stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
-            const isPriorityPackage = await isPriority(stop);
-            if(isPriorityPackage){
-              pmls.push(stop);
+                if(isPriorityPackage){
+                  pmls.push(stop);
+                }else{
+                  mls.push(stop);
+                }
+            }else if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription === 'Out for delivery.'){
+                const containsPriority = priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
+                if(containsPriority){
+                  if(!stop.Events[0].Status.includes("MLS"))
+                  stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+
+                  pmls.push(stop);
+                }else{
+                  if(!stop.Events[0].Status.includes("MLS"))
+                  stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+                  mls.push(stop);
+                }
+            }else if(stop.Events[0].EventCode === 'NH' || stop.Events[0].EventCode === 'UTLV' || stop.Events[0].EventCode === 'NDMI' || stop.Events[0].EventCode === 'BCLD' 
+                    || ((stop.Events[0].Status === 'Pending' 
+                    || stop.Events[0].EventShortDescription === 'Delayed. Delivery date updated.' ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
+                  if(!stop.Events[0].Status.includes("MLS"))
+                  stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+                  const isPriorityPackage = await isPriority(stop);
+                  if(isPriorityPackage){
+                    pmls.push(stop);
+                  }else{
+                    mls.push(stop);
+                  }
+            }else if(stop.Events[0].EventCode === 'RD' 
+                    || stop.Events[0].EventCode === 'UD' 
+                    || stop.Events[0].EventCode === 'ONHD'
+                    || stop.Events[0].EventCode === 'LOST'
+                    || stop.Events[0].EventCode === 'HW'
+                    || stop.Events[0].EventCode === 'DWDD'
+                    || stop.Events[0].EventCode === 'EMAR' 
+                    || stop.Events[0].EventCode === 'RB' 
+                    || stop.Events[0].EventCode === 'SFCT' 
+                    || stop.Events[0].EventCode === 'LOAD'
+                    || stop.Events[0].EventCode === 'CR'
+                    || stop.Events[0].Status === 'Returned'
+                    || stop.Events[0].Status === 'Undeliverable'
+                    || stop.Events[0].EventShortDescription.includes('Packaged received at the facility.') 
+                    || stop.Events[0].EventShortDescription.includes('Returned. Contact sender.')
+                    || stop.Events[0].EventShortDescription.includes('Damaged. Contact sender.')){
+                if(!stop.Events[0].Status.includes("MLS"))
+                stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+                const isPriorityPackage = await isPriority(stop);
+                if(isPriorityPackage){
+                  pmls.push(stop);
+                }else{
+                  mls.push(stop);
+                }
             }else{
-              mls.push(stop);
+              console.log("Cant Process Package: "+ stop.barcode);
+              problemStops.push(stop);
             }
-        }else{
-          console.log("Cant Process Package: "+ stop.barcode);
-          problemStops.push(stop);
+          }
+          code = {EventCode:stop.Events[0].EventCode, EventShortDescription:stop.Events[0].EventShortDescription};
+          
+          eventCodes.some(c => c.EventCode == code.EventCode)? null : eventCodes.push(code);
         }
+      } catch (error) {
+        problemStops.push(stop);
       }
-      code = {EventCode:stop.Events[0].EventCode, EventShortDescription:stop.Events[0].EventShortDescription};
-      
-      eventCodes.some(c => c.EventCode == code.EventCode)? null : eventCodes.push(code);
     }
     let loadNumber = ofd.length + attempts.length + del.length;
     let progress = Math.trunc(((del.length + attempts.length)/loadNumber) * 100);
@@ -505,9 +536,11 @@ function getTrackingnInfo(trackingNumber){
       }
     }).catch((err) =>{
       if(err.status === 404){
+        console.log("Unknown Tracking Number");
         resolve(err.status); 
       }else{
         console.log("Something Happened");
+        resolve("ERR_CONNECTION_RESET");
       }
     })
   });

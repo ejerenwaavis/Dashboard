@@ -430,8 +430,8 @@ async function updateReportWithDrivers(id, updatedDrivers) {
 
     // Save the updated document
     const updatedDoc = await docToUpdate.save();
-    console.error('Driver Report updated:', updatedDoc);
-    return {successfull:true, updatedDoc:updatedDoc, msg:"Driver Report updated Succesfully"}
+    // console.error('Driver Report updated:', updatedDoc);
+    return {successfull:true, updatedDoc:updatedDoc, msg:"Drivers Report updated Succesfully"}
   } catch (error) {
     console.error('Error:', error);
   }
