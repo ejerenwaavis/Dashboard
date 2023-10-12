@@ -473,10 +473,12 @@ app.route(APP_DIRECTORY + "/getReport")
 
 app.route(APP_DIRECTORY + "/getTrackingResource")
   .get(function (req, res) {
-    // console.error(outputDate() + " Hostname: "+req.hostname);
+    console.error(outputDate() + " Hostname: "+req.hostname);
     if((req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| DEVELOPEMENT){
-      res.send(TRACKINGURL)
+      res.send(TRACKINGURL);
     }else{
+      console.error("Developement Mode: " + DEVELOPEMENT);
+      console.error("Tried to get Tracking URL from unauhtenticated/Unauthorized request");
       res.send("unauthorized request")
     }
 })
