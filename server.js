@@ -453,7 +453,9 @@ app.route(APP_DIRECTORY + "/saveDriverStatus")
       updatedDrivers = req.body.updatedDrivers;
       reportID = req.body.reportID;
       if(updatedDrivers.length > 0){
-        let result = await updateReportWithDrivers(reportID, updatedDrivers);
+        let result = {successfull:true, updatedDoc:{lastUpdated:new Date()}, msg:"Just a dummy save API call"}
+        // remove comment for successful save
+        // let result = await updateReportWithDrivers(reportID, updatedDrivers);
         console.error(result);
         res.send(result)
       }else{

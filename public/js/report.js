@@ -529,8 +529,9 @@ function updateLoadStatus(status) {
 
 function getTrackingnInfo(trackingNumber){
   return new Promise(async function (resolve, reject){
+    console.log("tracking resouce: " + trackingResource);
+    console.log("tracking url: " + trackingResource+trackingNumber);
     $.get(trackingResource+trackingNumber, function(details,status){
-      // console.log(details);
       // console.log(status);
       if(details){
         let Events = details.Packages[0].Events;
@@ -545,6 +546,7 @@ function getTrackingnInfo(trackingNumber){
     }).catch((err) =>{
       if(err.status === 404){
         console.log("Unknown Tracking Number");
+        console.log(err);
         resolve(err.status); 
       }else{
         console.log("Something Happened");
