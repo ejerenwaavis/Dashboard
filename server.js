@@ -485,6 +485,20 @@ app.route(APP_DIRECTORY + "/getTrackingResource")
     }
 })
 
+app.route(APP_DIRECTORY + "/getTURL")
+  .get(function (req, res) {
+    console.error(outputDate() + " Hostname: "+req.hostname);
+    console.error("Developement: " + DEVELOPEMENT);
+    // (req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| 
+    if(DEVELOPEMENT){
+      res.send(""+TRACKINGURL+"");
+    }else{
+      console.error("Developement Mode: " + DEVELOPEMENT);
+      console.error("Tried to get Tracking URL from unauhtenticated/Unauthorized request");
+      res.send("unauthorized request")
+    }
+})
+
 app.route(APP_DIRECTORY + "/getPriorityBrands")
   .get(function (req, res) {
     res.send(priorityBrands);

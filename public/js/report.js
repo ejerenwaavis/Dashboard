@@ -472,9 +472,10 @@ function getDriverName(driverNumber) {
 
 function getTrackingURL() {
   return new Promise((resolve, reject) => {
-    $.get(domain + '/getTrackingResource', function(data) {
-      console.log("tracking resouce api call: "+domain + '/getTrackingResource');
+    $.get(domain + '/getTURL', function(data) {
+      console.log("tracking resouce api call: "+domain + '/getTURL');
       // console.log('Tracking URL Acquired');
+      console.log(data);
       resolve(data);
     }).fail(function(error) {
       reject(error);
