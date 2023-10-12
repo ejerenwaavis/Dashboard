@@ -46,6 +46,7 @@ const tempFilePath = TEMP_FILEPATH;
 
 const express = require("express");
 const app = express();
+const jose = require('jose');
 const ejs = require("ejs");
 const papa = require("papaparse");
 const bodyParser = require("body-parser");
@@ -54,7 +55,6 @@ const path = require("path");
 const Excel = require('exceljs');
 const formidable = require('formidable');
 const mongoose = require("mongoose");
-const stripe = require("stripe")(STRIPEAPI);
 
 const session = require("express-session");
 const passport = require('passport');
@@ -116,8 +116,9 @@ const userConn = mongoose.createConnection(usersDB, {
 
 
 const userSchema = new mongoose.Schema({
-  _id: String,
+    _id: String,
   username: String,
+  verified: { type: Boolean, default: false },
   firstName: String,
   lastName: { type: String, default: "" },
   password: { type: String, default: "" },
@@ -126,10 +127,9 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  
-  verified: { status: Boolean, default: false,
-  approvalNotes:[{description:String, adminUsername:String, date:Date}]
-  },
+  email: { type: String, default: "" },
+  approvalNotes:[{description:String, adminEmail: { type: String, default: "" }, adminUsername:String, date:Date}],
+  verified: { type: Boolean, default: false },
   isProUser: { type: Boolean, default: false },
   renews: { type: Date, default: new Date() },
   usageCount: { type: Number, default: 0 },
@@ -159,45 +159,121 @@ passport.use(new GoogleStrategy({
   callbackURL: (SERVER) ? "https://triumphcourier.com"+ APP_DIRECTORY+"/googleLoggedin" : APP_DIRECTORY + "/googleLoggedin",
   userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
 },
-  function (accessToken, refreshToken, profile, cb) {
+  function(accessToken, refreshToken, profile, cb) {
     let userProfile = profile._json;
-    // console.log(userProfile);
-    User.findOne({
-      _id: userProfile.email
-    }, function (err, user) {
+    // console.error(userProfile);
+    // console.error("Logged In as: " + userProfile.email + "\n" + userProfile.family_name +"\n" +userProfile.given_name+
+    // "\n" +userProfile.name+ "\n" + userProfile.picture);
+    // console.error("\n");
+    User.findOne({_id: userProfile.sub 
+    }, function(err, user) {
+      // console.log(err);
+      // console.log(user);
       if (!err) {
-        // console.log("logged in");
+        let oldUser = user;
+        let newUser={};
+        // console.error("userFound---->:");
+        // console.error(user);
+        // console.error("----->:\n");
+        
         if (user) {
-          console.log("Logged in as ----> " + user._id);
-          return cb(null, user)
+          if((!user.username) && userProfile.name){
+            // console.error("user has no USERNAME on file");
+            newUser.username = userProfile.name;
+          }
+          if((!user.lastName) && userProfile.family_name){
+            // console.error("user has no LAST NAME on file");
+            newUser.lastName = userProfile.family_name;
+          }
+
+          if((!user.firstName) && userProfile.given_name){
+            // console.error("user has no FIRST NAME on file");
+            newUser.firstName = userProfile.given_name;
+          }
+
+          if((!user.photoURL) && userProfile.picture){
+            // console.error("user has no PHOTO on file");
+            newUser.photoURL = userProfile.picture;
+          }
+
+          if(!user.email && userProfile.email){
+            // console.error("user has no EMAIL on file");
+            newUser.email = userProfile.email;
+          }
+
+          // console.error(user);
+          // console.error(newUser);
+
+          if(oldUser === newUser){
+            console.error("OldUser is equals NewUser no need for update");
+            if (user.verified) {
+              return cb(null, user)
+            } else {
+              console.error("Logged in but Still Unauthorized");
+              return cb(err);
+            }
+          }else{
+            
+              User.findOneAndUpdate({_id:user._id}, newUser, {new:true, upsert:true})
+              .then(function(result) {
+                // console.error(result);
+                console.error(user.firstName + " - " + (user.email? user.email:user._id)+ " : User Updates ran Successfully");
+                return cb(null, user);
+              })
+              .catch(function(err) {
+                console.error("failed to create user");
+                console.error(err);
+            });
+          }
         } else {
-          console.log("user not found - creating new user");
-          let newUser = new User({
-            _id: userProfile.email,
-            username: userProfile.email,
-            firstName: userProfile.given_name,
-            lastName: userProfile.family_name,
-            photoURL: userProfile.picture
-          });
+          console.error("user not found - creating new user");
+          let newID; 
+          let newUser;
+          if(/^\d+$/.test(userProfile.sub)){
+            newID = userProfile.sub;
+              console.error("Creating user with a valid _ID");
+            newUser = new User({
+              _id: userProfile.sub,
+              email: userProfile.email,
+              username: userProfile.name,
+              firstName: userProfile.given_name,
+              lastName: userProfile.family_name,
+              verified: false,
+              isProUser: false,
+              photoURL: userProfile.picture
+              });
+            }else{
+              console.error("Creating user w/o _ID");
+              newUser = new User({
+              email: userProfile.name,
+              username: userProfile.given_name + " " + userProfile.family_name,
+              firstName: userProfile.given_name,
+              lastName: userProfile.family_name,
+              verified: false,
+              isProUser: false,
+              photoURL: userProfile.picture
+              })
+            }
+
 
           newUser.save()
-            .then(function () {
-              return cb(null, user);
+            .then(function() {
+              console.error("User Created Successfully");
+              return cb(err);
             })
-            .catch(function (err) {
-              console.log("failed to create user");
-              console.log(err);
-              return cb(new Error(err));
+            .catch(function(err) {
+              console.error("failed to create user");
+              console.error(err);
             });
         }
       } else {
-        console.log("***********Internal error*************");
-        console.log(err);
-        return cb(new Error(err));
+        console.error("Internal error");
+        return cb(new Error(err))
       }
     });
   }
 ));
+
 
 // Mongoose Report DB Connection Setup
 const reportConn = mongoose.createConnection(reportsDB, {
@@ -235,10 +311,18 @@ app.route(APP_DIRECTORY + "/")
   .get(function (req, res) {
     // print(tempFilePath);
     if (req.isAuthenticated() || DEVELOPEMENT) {
-      res.render("dashboard.ejs", {
-        body: new Body("Dashboard", "", ""),
-        user: (req.user)? req.user : null,
-      });
+      if((req.user? req.user.isProUser : null)){
+        res.render("dashboard.ejs", {
+          body: new Body("Dashboard", "", ""),
+          user: (req.user)? req.user : null,
+        });
+      }else{
+        res.render("login", {
+          body: new Body("Login", "UnAuthorized Access", ""),
+          login: null,
+          user: req.user,
+        });
+      }
     } else {
       res.redirect(APP_DIRECTORY + "/login");
     }
@@ -323,7 +407,33 @@ app.route(APP_DIRECTORY + "/googleLoggedin")
         return res.redirect(APP_DIRECTORY + '/');
       });
     })(req, res, next);
-  });
+  })
+  .post(async function (req,res) {
+    let claims = null;
+    claims = jose.decodeJwt(req.body.credential)
+    console.log(claims);
+    if(claims.iss == "https://accounts.google.com" && claims.email_verified){
+        user = await User.findOne({_id:claims.sub});
+        if(user){
+          req.logIn(user, function (err) {
+            if (err) {
+              return res.render('login', {
+                body: new Body("Login", "Unable to Login", ""),
+                user: null,
+              });
+            }
+            // Redirect if it succeeds
+            return res.redirect(APP_DIRECTORY + '/');
+          });
+        }else{
+          console.error("No Such User");
+          res.redirect(APP_DIRECTORY + "/login")    
+        }
+    }else{
+      console.error("Fishy Login");
+      res.redirect(APP_DIRECTORY + "/login")
+    }
+  })
 
 app.route(APP_DIRECTORY + "/logout")
   .get(function (req, res) {
