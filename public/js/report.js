@@ -542,8 +542,8 @@ function getTrackingnInfo(trackingNumber){
       }
     }).catch((err) =>{
       if(err.status === 404){
-        console.log("Unknown Tracking Number");
-        console.log(err);
+        console.log("Tracking Number ("+trackingNumber+"): Status Retuend: " + err.statusText);
+        // console.log();
         resolve(err.status); 
       }else{
         console.log("Something Happened");
