@@ -14,6 +14,7 @@ eventCodes.problemStops = [];
 
 window.onload = async (event) => {
   trackingResource = await getTrackingURL();
+  console.log(trackingResource);
   priorityBrands = await getPriorityBrands();
   let update = await pullLocalReport();
 };
