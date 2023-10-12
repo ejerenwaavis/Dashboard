@@ -313,7 +313,8 @@ async function displayReport(report) {
       }
     }
     let loadNumber = ofd.length + attempts.length + del.length;
-    let progress = Math.trunc(((del.length + attempts.length)/loadNumber) * 100);
+    let progressCalc = Math.trunc(((del.length + attempts.length)/loadNumber) * 100);
+    progress = (isNaN(progressCalc) ? 0 : progressCalc);
     html += '<td>'+driverName+'</td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="load" onclick="showDetailedStops(this)">'+(loadNumber)+'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="ofd" '+(ofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ ofd.length +'</a></td>';
