@@ -317,11 +317,7 @@ app.route(APP_DIRECTORY + "/")
           user: (req.user)? req.user : null,
         });
       }else{
-        res.render("login", {
-          body: new Body("Login", "", ""),
-          login: null,
-          user: req.user,
-        });
+        res.redirect(APP_DIRECTORY + "/login");
       }
     } else {
       res.redirect(APP_DIRECTORY + "/login");
