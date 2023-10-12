@@ -475,8 +475,8 @@ app.route(APP_DIRECTORY + "/getTrackingResource")
   .get(function (req, res) {
     console.error(outputDate() + " Hostname: "+req.hostname);
     console.error("Developement: " + DEVELOPEMENT);
-
-    if((req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| DEVELOPEMENT){
+    // (req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| 
+    if(DEVELOPEMENT){
       res.send(TRACKINGURL);
     }else{
       console.error("Developement Mode: " + DEVELOPEMENT);
