@@ -490,10 +490,9 @@ app.route(APP_DIRECTORY + "/getTURL")
     console.error(outputDate() + " Hostname: "+req.hostname);
     console.error("Developement: " + DEVELOPEMENT);
     // (req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| 
-    if(DEVELOPEMENT){
+    if((req.isAuthenticated && req.hostname.includes("triumphcourier.com")) || DEVELOPEMENT){
       res.send(""+TRACKINGURL+"");
     }else{
-      console.error("Developement Mode: " + DEVELOPEMENT);
       console.error("Tried to get Tracking URL from unauhtenticated/Unauthorized request");
       res.send("unauthorized request")
     }

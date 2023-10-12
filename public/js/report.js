@@ -14,7 +14,6 @@ eventCodes.problemStops = [];
 
 window.onload = async (event) => {
   trackingResource = await getTrackingURL();
-  console.log(trackingResource);
   priorityBrands = await getPriorityBrands();
   let update = await pullLocalReport();
 };
@@ -473,9 +472,7 @@ function getDriverName(driverNumber) {
 function getTrackingURL() {
   return new Promise((resolve, reject) => {
     $.get(domain + '/getTURL', function(data) {
-      console.log("tracking resouce api call: "+domain + '/getTURL');
       // console.log('Tracking URL Acquired');
-      console.log(data);
       resolve(data);
     }).fail(function(error) {
       reject(error);
@@ -487,7 +484,6 @@ function getPriorityBrands() {
   return new Promise((resolve, reject) => {
     $.get(domain + '/getPriorityBrands', function(data) {
       resolve(data);
-      // console.log('Tracking URL Acquired');
     }).fail(function(error) {
       reject(error);
     });
