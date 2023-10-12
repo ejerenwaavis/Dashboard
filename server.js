@@ -318,7 +318,7 @@ app.route(APP_DIRECTORY + "/")
         });
       }else{
         res.render("login", {
-          body: new Body("Login", "UnAuthorized Access", ""),
+          body: new Body("Login", "", ""),
           login: null,
           user: req.user,
         });
@@ -338,7 +338,7 @@ app.route(APP_DIRECTORY + "/login")
     } else {
       // console.log("Unauthorized Access, Please Login");
       res.render("login", {
-        body: new Body("Login", "", ""),
+        body: new Body("Login", "Access Denied", ""),
         login: null,
         user: req.user,
       });
