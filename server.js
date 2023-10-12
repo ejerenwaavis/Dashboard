@@ -10,7 +10,7 @@ const CLIENT_SECRETE = process.env.CLIENTSECRETE;
 const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
 const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
 
-const DEVELOPEMENT = process.env.DEVELOPEMENT
+const DEVELOPEMENT =  process.env.DEVELOPEMENT === "true" ? true : false;
 
 const HEREAPI = process.env.HEREAPI;
 
@@ -474,6 +474,8 @@ app.route(APP_DIRECTORY + "/getReport")
 app.route(APP_DIRECTORY + "/getTrackingResource")
   .get(function (req, res) {
     console.error(outputDate() + " Hostname: "+req.hostname);
+    console.error("Developement: " + DEVELOPEMENT);
+
     if((req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| DEVELOPEMENT){
       res.send(TRACKINGURL);
     }else{
