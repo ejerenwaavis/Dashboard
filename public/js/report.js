@@ -528,8 +528,6 @@ function updateLoadStatus(status) {
 
 function getTrackingnInfo(trackingNumber){
   return new Promise(async function (resolve, reject){
-    console.log("tracking resouce: " + trackingResource);
-    console.log("tracking url: " + trackingResource+trackingNumber);
     $.get(trackingResource+trackingNumber, function(details,status){
       // console.log(status);
       if(details){
