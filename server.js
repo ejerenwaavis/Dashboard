@@ -22,7 +22,9 @@ const MONGOTCS_USER = process.env.MONGOTCS_USER;
 const MONGOTCS_PASS = process.env.MONGOTCS_PASS;
 
 // const axios = require('axios');
+
 const TRACKINGURL = process.env.TRACKINGURL;
+const LSTRACKINGURL = process.env.LSTRACKINGURL;
 
 
 const REPORTS_DB = process.env.REPORTS_DB;
@@ -584,6 +586,19 @@ app.route(APP_DIRECTORY + "/getTURL")
     // (req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| 
     if((req.isAuthenticated && req.hostname.includes("triumphcourier.com")) || DEVELOPEMENT){
       res.send(""+TRACKINGURL+"");
+    }else{
+      console.error("Tried to get Tracking URL from unauhtenticated/Unauthorized request");
+      res.send("unauthorized request")
+    }
+})
+
+app.route(APP_DIRECTORY + "/getLSURL")
+  .get(function (req, res) {
+    // console.error(outputDate() + " Hostname: "+req.hostname);
+    // console.error("Developement: " + DEVELOPEMENT);
+    // (req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| 
+    if((req.isAuthenticated && req.hostname.includes("triumphcourier.com")) || DEVELOPEMENT){
+      res.send(""+LSTRACKINGURL+"");
     }else{
       console.error("Tried to get Tracking URL from unauhtenticated/Unauthorized request");
       res.send("unauthorized request")

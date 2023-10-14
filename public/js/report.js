@@ -1,5 +1,6 @@
 let domain = $('#domain').attr('domain');
 let trackingResource = "";
+let trackingResource2 = "";
 let priorityBrands = null;
 let drivers = [];
 let clientDeiverStatus = [];
@@ -14,9 +15,11 @@ eventCodes.problemStops = [];
 
 window.onload = async (event) => {
   trackingResource = await getTrackingURL();
+  trackingResource2 = await getTrackingURL2();
   priorityBrands = await getPriorityBrands();
   let update = await pullLocalReport();
 };
+
 
 
 async function pullReport() {
@@ -175,7 +178,7 @@ async function displayReport(report) {
               stop.Events = 404;
             }
             totalOnlinePulls++;
-          }else if(stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.')){
+          }else if(stop.Events[0].EventCode === 'DLVD' || stop.Events[0].EventCode === 'FOTO' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.')){
             console.log("Already Delivered. not puling from external source");
           }else if(pullFromServer){
             let info = await getTrackingnInfo(stop.barcode);
@@ -198,7 +201,7 @@ async function displayReport(report) {
           }
 
           if(stop.lastScan){ // this makes sure that only pieces that wew scanned are taken into consideration of displaying on delivered or attempts...e.t.c 
-            if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.'))){
+            if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].EventCode === 'FOTO' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.'))){
                 del.push(stop);
             }else if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription.includes('Out for delivery.')){
                 const containsPriority = await priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
@@ -240,6 +243,7 @@ async function displayReport(report) {
                 }
             }else{
               console.log("Cant Process Package: "+ stop.barcode);
+              console.log("Cant Process Package: "+ stop.Events[0]);
               problemStops.push(stop);
             }
           }else{ //add whaever that doesent have a lst scanned on it to MLS and edit the status to show that.
@@ -342,6 +346,7 @@ async function displayReport(report) {
   if(eventCodes.problemStops.length > 0){
     console.log(eventCodes);
   }
+  console.log(eventCodes);
   return drivers;
 }
 
@@ -470,6 +475,17 @@ function getDriverName(driverNumber) {
   });
 }
 
+function getTrackingURL2() {
+  return new Promise((resolve, reject) => {
+    $.get(domain + '/getLSURL', function(data) {
+      // console.log('Tracking URL Acquired');
+      resolve(data);
+    }).fail(function(error) {
+      reject(error);
+    });
+  });
+}
+
 function getTrackingURL() {
   return new Promise((resolve, reject) => {
     $.get(domain + '/getTURL', function(data) {
@@ -529,28 +545,62 @@ function updateLoadStatus(status) {
 
 function getTrackingnInfo(trackingNumber){
   return new Promise(async function (resolve, reject){
-    $.get(trackingResource+trackingNumber, function(details,status){
-      // console.log(status);
-      if(details){
-        let Events = details.Packages[0].Events;
-        if(details.Packages[0].VpodImageString){
-          // console.log("stop Has a VPOD");
-          Events.vpod = "data:image/"+details.Packages[0].VpodImageFormat+";base64,"+details.Packages[0].VpodImageString; 
+    let alternativeTracking = $("#alternativeTracking").is(":checked");
+    if(!alternativeTracking){
+      $.get(trackingResource+trackingNumber, function(details,status){
+        // console.log(status);
+        if(details){
+          let Events = details.Packages[0].Events;
+          if(details.Packages[0].VpodImageString){
+            // console.log("stop Has a VPOD");
+            Events.vpod = "data:image/"+details.Packages[0].VpodImageFormat+";base64,"+details.Packages[0].VpodImageString; 
+          }
+          resolve(Events)
+        }else{
+          resolve("ERR: Cant find info")
         }
-        resolve(Events)
-      }else{
-        resolve("ERR: Cant find info")
-      }
-    }).catch((err) =>{
-      if(err.status === 404){
-        console.log("Tracking Number ("+trackingNumber+"): Status Retuend: " + err.statusText);
-        // console.log();
-        resolve(err.status); 
-      }else{
-        console.log("Something Happened");
-        resolve("ERR_CONNECTION_RESET");
-      }
-    })
+      }).catch((err) =>{
+        if(err.status === 404){
+          console.log("Tracking Number ("+trackingNumber+"): Status Retuend: " + err.statusText);
+          // console.log();
+          resolve(err.status); 
+        }else{
+          console.log("Something Happened");
+          resolve("ERR_CONNECTION_RESET");
+        }
+      })
+    }else{
+      $.get(trackingResource2+trackingNumber+"/json", async function(details,status){
+        // console.log("tracking with alternativeTracking: " + trackingResource2);
+        // console.log(details);
+        if(details){
+          let modifiedEvents = [];
+          for await (const event of details.Events){
+            let me = {City : event.City, Country : event.Country, EventCode : event.EventModifier, EventLongDescription : (event.EventLongText)? event.EventLongText : "", 
+              EventShortDescription : (event.EventShortText)? event.EventShortText : "", PostalCode : event.PostalCode, State : event.State, Status : event.EventType, UtcEventDateTime : event.UTCDateTime};
+            if(event.PhotoPath){
+              // console.log("stop Has a VPOD");
+              me.vpodPath = event.PhotoPath; 
+            }
+            modifiedEvents.push(me);
+          }
+
+          resolve(modifiedEvents)
+        }else{
+          resolve("ERR: Cant find info")
+        }
+      }).catch((err) =>{
+        if(err.status === 404){
+          console.log("Tracking Number ("+trackingNumber+"): Status Retuend: " + err.statusText);
+          // console.log();
+          resolve(err.status); 
+        }else{
+          console.log("Something Happened");
+          resolve("ERR_CONNECTION_RESET");
+        }
+      })
+    }
+
   });
 }
 
