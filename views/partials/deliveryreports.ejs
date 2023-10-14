@@ -5,8 +5,14 @@
                 <h6 class="placard-title fw-bold text-mute col d-inline">Delivery Reports</h6>
                 |
                 <h6 id="lastUpdated" class="placard-title text-mute col d-inline"></h6>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="alternativeTracking">
+                    <label class="form-check-label" for="flexSwitchCheckDefault">Alternative Source : <span id="trackingSource">LaserShip</span> </label>
+                </div>
             </div>
+            
             <div  class="py-2 btn-group" role="group" >
+                
                 <button onclick="pullReport()" id="pullRequestButton" class="btn btn-sm btn-secondary disabled">Pull Reports</button>
                 <button type="button" onclick="stopOullingProcess()" class="btn btn-sm btn-outline-secondary"> X </button>
             </div>
