@@ -614,7 +614,7 @@ app.route(APP_DIRECTORY + "/getPriorityBrands")
 app.route(APP_DIRECTORY + "/getDriverName/:driverNumber")
   .get(function (req, res) {
     driver = (contractors.filter((c) => c.driverNumber === req.params.driverNumber))[0];
-    res.send(driver);
+    res.send(driver ? : {driverNumber:req.params.driverNumber, name:"** - "+req.params.driverNumber});
 })
 
 
