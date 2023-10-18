@@ -409,7 +409,7 @@ app.route(APP_DIRECTORY + "/googleLoggedin")
   .post(async function (req,res) {
     let claims = null;
     claims = jose.decodeJwt(req.body.credential)
-    console.log(claims);
+    // console.log(claims);
     if(claims.iss == "https://accounts.google.com" && claims.email_verified){
         user = await User.findOne({_id:claims.sub});
         if(user){
@@ -578,6 +578,20 @@ app.route(APP_DIRECTORY + "/getReport")
     res.send(report);
 })
 
+app.route(APP_DIRECTORY + "/getReport/:date")
+  .get(async function (req, res) {
+    let param = Number(req.params.date);
+    let date = (new Date(param)).setHours(0,0,0,0);
+    // console.log(param);
+    // console.log(date);
+    if(param){
+      let report = await Report.find({_id:date},'-__v');
+      res.send(report);
+    }else{
+      res.send({err:"Not Found", msg:"" + param});
+    }
+})
+
 
 app.route(APP_DIRECTORY + "/getTURL")
   .get(function (req, res) {
@@ -614,7 +628,7 @@ app.route(APP_DIRECTORY + "/getPriorityBrands")
 app.route(APP_DIRECTORY + "/getDriverName/:driverNumber")
   .get(function (req, res) {
     driver = (contractors.filter((c) => c.driverNumber === req.params.driverNumber))[0];
-    res.send(driver ? : {driverNumber:req.params.driverNumber, name:"** - "+req.params.driverNumber});
+    res.send(driver ? driver : {driverNumber:req.params.driverNumber, name:"** - "+req.params.driverNumber});
 })
 
 

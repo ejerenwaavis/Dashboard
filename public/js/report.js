@@ -62,6 +62,46 @@ async function pullReport() {
   })
 }
 
+async function pullPastReport(dateTime) {
+  stopReportPull = false;
+  pullFromServer = true;
+  $("#pullRequestButton").addClass("disabled");
+  $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="report-process-status" role="status">Loading...</span></span>');
+  // let manifestProcessing = await processManifests();
+  // console.log(manifestProcessing);
+  $.get(domain + '/getReport/'+dateTime, async function (response) {
+    if(response.length > 0){
+      console.log('Processing Past Report');
+      console.log(response);
+      totalStops = await response[0].drivers.reduce((accumulator, driver) => {
+                        return accumulator + driver.manifest.length;
+                      }, 0);
+      let updatedDrivers = await displayReport(response);
+      drivers = updatedDrivers;
+      updateLoadStatus("Saving Updates...")
+      let result = await saveDriverStatus(response[0]._id, updatedDrivers);
+      if(result.successfull){
+        $('#lastUpdated').text(' Last Updated: ' + new Date(result.updatedDoc.lastUpdated).toLocaleString());
+        // console.log(result);
+        pullFromServer = false;
+        console.log('Saved Online Copy Successsfully');
+      }else{
+        pullFromServer = false;
+        console.error('Failed to save Online version');
+      }
+      $("#pullRequestButton").removeClass("disabled");
+      $("#pullRequestButton").html('Pull Report');
+      $('#sync-warning').addClass("d-none");
+    }else{
+      console.log("No Driver Manifests Report Found at the Moment");
+      $('#sync-warning').text("Hmm.... it looks No Driver Manifests has been submitted to designated email.");
+      $('#sync-warning').removeClass("d-none");
+        $("#pullRequestButton").removeClass("disabled");
+      $("#pullRequestButton").html('Pull Report');
+    }
+  })
+}
+
 async function pullLocalReport() {
   stopReportPull = false;
   $("#pullRequestButton").addClass("disabled");
@@ -121,6 +161,10 @@ async function pullLocalReport() {
   return updatdReport;
 }
 
+
+
+
+
 async function displayReport(report) {
   $('#reportDetails tbody').html("")
   $('#driverPlaceHolder').removeClass('d-none');
@@ -177,22 +221,22 @@ async function displayReport(report) {
             }else{
               stop.Events = 404;
             }
-            totalOnlinePulls++;
-          }else if(stop.Events[0].EventCode === 'DLVD' || stop.Events[0].EventCode === 'FOTO' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.')){
+            totalOnlinePulls++; 
+          }else if(stop.Events[0].EventCode === 'DLVD' || stop.Events[0].EventCode === 'FOTO' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].Status.includes('Miscellaneous') || stop.Events[0].EventShortDescription.includes('Delivered.')){
             console.log("Already Delivered. not puling from external source");
           }else if(pullFromServer){
             let info = await getTrackingnInfo(stop.barcode);
             if(info != 'ERR_CONNECTION_RESET'){
               stop.Events = info;
             }else{
-              stop.Events = 404;
+              stop.Events = 500;
             }
             totalOnlinePulls++;
             // console.log(stop);
           }
         }
 
-        if(stop.Events != 404){
+        if(stop.Events != 404 && stop.Events != 500){
             // console.log(stop.Events);
           let stopEventTime = (new Date(stop.Events[0].UtcEventDateTime)).getTime()
           
@@ -201,7 +245,12 @@ async function displayReport(report) {
           }
 
           if(stop.lastScan){ // this makes sure that only pieces that wew scanned are taken into consideration of displaying on delivered or attempts...e.t.c 
-            if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].EventCode === 'FOTO' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.'))){
+            if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].EventCode === 'FOTO' 
+                || (stop.Events[0].EventCode === 'CL' && stop.Events[0].EventShortDescription.includes('Delivered'))
+                || stop.Events[0].Status.includes('Delivered') 
+                || stop.Events[0].Status.includes('Miscellaneous') 
+                || stop.Events[0].EventShortDescription.includes('Select the camera') 
+                || stop.Events[0].EventShortDescription.includes('Delivered.'))){
                 del.push(stop);
             }else if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription.includes('Out for delivery.')){
                 const containsPriority = await priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
@@ -210,7 +259,9 @@ async function displayReport(report) {
                 }else{
                   ofd.push(stop);
                 }
-            }else if(stop.Events[0].EventCode === 'NH' || stop.Events[0].EventCode === 'UTLV' || stop.Events[0].EventCode === 'NDMI' || stop.Events[0].EventCode === 'BCLD' 
+            }else if(stop.Events[0].EventCode === 'NH' || stop.Events[0].EventCode === 'UTLV' || stop.Events[0].EventCode === 'NDMI' 
+                    || stop.Events[0].EventCode === 'BCLD' 
+                    || stop.Events[0].Status.includes('Attempted')
                     || ((stop.Events[0].Status.includes('Pending')
                     || stop.Events[0].EventShortDescription.includes('Delayed. Delivery date updated.') ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
                 const isPriorityPackage = await isPriority(stop);
@@ -246,8 +297,13 @@ async function displayReport(report) {
               console.log("Cant Process Package: "+ stop.Events[0]);
               problemStops.push(stop);
             }
-          }else{ //add whaever that doesent have a lst scanned on it to MLS and edit the status to show that.
-            if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].Status.includes('Delivered') || stop.Events[0].EventShortDescription.includes('Delivered.'))){
+          }else{ //add whaever that doesent have a last scanned on it to MLS and edit the status to show that.
+            if((stop.Events[0].EventCode === 'DLVD' || stop.Events[0].EventCode === 'FOTO' 
+                || (stop.Events[0].EventCode === 'CL' && stop.Events[0].EventShortDescription.includes('Delivered'))
+                || stop.Events[0].Status.includes('Delivered') 
+                || stop.Events[0].Status.includes('Miscellaneous') 
+                || stop.Events[0].EventShortDescription.includes('Select the camera') 
+                || stop.Events[0].EventShortDescription.includes('Delivered.'))){
               if(!stop.Events[0].Status.includes("MLS"))
               stop.Events[0].Status = stop.Events[0].Status + ' | MLS';  
               const isPriorityPackage = await isPriority(stop);
@@ -305,6 +361,9 @@ async function displayReport(report) {
                 }
             }else{
               console.log("Cant Process Package: "+ stop.barcode);
+              console.log(driverName);
+              console.log(stop.name);
+              console.log(stop.Events[0].EventCode === 'FOTO');
               problemStops.push(stop);
             }
           }
@@ -543,7 +602,7 @@ function updateLoadStatus(status) {
 }
 
 
-function getTrackingnInfo(trackingNumber){
+async function getTrackingnInfo(trackingNumber){
   return new Promise(async function (resolve, reject){
     let alternativeTracking = $("#alternativeTracking").is(":checked");
     if(!alternativeTracking){
@@ -559,11 +618,13 @@ function getTrackingnInfo(trackingNumber){
         }else{
           resolve("ERR: Cant find info")
         }
-      }).catch((err) =>{
+      }).catch(async (err) =>{
         if(err.status === 404){
-          console.log("Tracking Number ("+trackingNumber+"): Status Retuend: " + err.statusText);
-          // console.log();
-          resolve(err.status); 
+          console.log("Tracking Number ("+trackingNumber+"): Status Returned: " + err.statusText);
+          console.log("Trying alternative Search");
+          alternativeSearch = await alternativeTrack(trackingNumber);
+          console.log(alternativeSearch);
+          resolve(alternativeSearch); 
         }else{
           console.log("Something Happened");
           resolve("ERR_CONNECTION_RESET");
@@ -605,6 +666,41 @@ function getTrackingnInfo(trackingNumber){
 }
 
 
+async function alternativeTrack(trackingNumber){
+  return new Promise(async function (resolve, reject){
+
+  await $.get(trackingResource2+trackingNumber+"/json", async function(details,status){
+        // console.log("tracking with alternativeTracking: " + trackingResource2);
+        // console.log(details);
+        if(details){
+          let modifiedEvents = [];
+          for await (const event of details.Events){
+            let me = {City : event.City, Country : event.Country, EventCode : event.EventModifier, EventLongDescription : (event.EventLongText)? event.EventLongText : "", 
+              EventShortDescription : (event.EventShortText)? event.EventShortText : "", PostalCode : event.PostalCode, State : event.State, Status : event.EventType, UtcEventDateTime : event.UTCDateTime};
+            if(event.PhotoPath){
+              // console.log("stop Has a VPOD");
+              me.vpodPath = event.PhotoPath; 
+            }
+            modifiedEvents.push(me);
+          }
+
+          resolve(modifiedEvents)
+        }else{
+          resolve("ERR: Cant find info")
+        }
+      }).catch((err) =>{
+        if(err.status === 404){
+          console.log("Tracking Number ("+trackingNumber+"): Alternative Search Returnd: " + err.statusText);
+          // console.log();
+          resolve(err.status); 
+        }else{
+          console.log("Something Happened");
+          resolve("ERR_CONNECTION_RESET");
+        }
+      })
+  });
+}
+
 
 async function isPriority(stop) {
   if(priorityBrands !=null){
@@ -614,4 +710,24 @@ async function isPriority(stop) {
     console.log("Unable to Check for Priority");
     return false;
   }
+}
+
+
+
+async function isDelivered(stop) {
+  
+}
+
+
+async function isAttempted(stop) {
+  
+}
+
+
+async function isOFD(stop) {
+  
+}
+
+async function isMLS(stop) {
+  
 }
