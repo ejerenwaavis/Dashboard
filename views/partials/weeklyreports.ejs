@@ -1,34 +1,33 @@
-<section id="deliveryReport">
+<section id="weeklyReport">
     <div class="container-fluid px-0">
         <div class="d-flex justify-content-between align-items-end">
             <div class="">
-                <h6 class="placard-title fw-bold text-mute col d-inline">Delivery Reports</h6>
-                |
-                <h6 id="lastUpdated" class="placard-title text-mute col d-inline"></h6>
+                <h6 class="placard-title fw-bold text-mute col d-inline">Weekly Report</h6>
+                
+                <h6 id="weeklyLastUpdated" class="placard-title text-mute col d-inline"></h6>
                 <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="alternativeTracking">
-                    <label class="form-check-label" for="flexSwitchCheckDefault">Alternative Source : <span id="trackingSource">LaserShip</span> </label>
+                    <label class="form-check-label" for="flexSwitchCheckDefault"> 10/14/2023 - 10/20/2023 </label>
                 </div>
             </div>
             
             <div  class="py-2 btn-group" role="group" >
                 
-                <button onclick="pullReport()" id="pullRequestButton" class="btn btn-sm btn-secondary disabled">Pull Reports</button>
-                <button type="button" onclick="stopOullingProcess()" class="btn btn-sm btn-outline-secondary"> X </button>
+                <button onclick="pullReport()" id="pullWeeklyButton" class="btn btn-sm btn-secondary disabled">Pull weekly Reports</button>
+                <button type="button" onclick="stopweeklyPullingProcess()" class="btn btn-sm btn-outline-secondary"> X </button>
             </div>
         </div>
     </div>
     <div class="placard p-3 rounded shadow">
-        <div class="modal fade" id="detailModal" tabindex="-2" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal fade" id="weeklyReportDetailModal" tabindex="-2" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="fs-5 fw-bold text-capitalize" id="detailsHeader">
+                        <h5 class="fs-5 fw-bold text-capitalize" id="weeklyReportDetailsHeader">
                             Username</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div id="" class="modal-body">
-                        <table id="detailModalTable" class="table table-hover">
+                        <table id="weeklyReportDetailModalTable" class="table table-hover">
                             <thead>
                                 <tr>
                                     <td>BARCODE</td>
@@ -50,28 +49,28 @@
             </div>
         </div>
         <div class="table-responsive">
-            <table id="reportDetails" class="table table-hover">
+            <table id="weeklyReportDetails" class="table table-hover">
                 <thead>
                     <tr>
                         <td>IC #</td>
                         <td>NAME</td>
-                        <td>LOAD</td>
-                        <td>OFD</td>
-                        <td>POFD</td>
-                        <td>DEL</td>
-                        <td>ATTEMPTS</td>
-                        <td>MLS</td>
-                        <td>PROGRESS</td>
-                        <td>EVENT</td>
+                        <td>SAT</td>
+                        <td>SUN</td>
+                        <td>MON</td>
+                        <td>TUE</td>
+                        <td>WED</td>
+                        <td>THU</td>
+                        <td>FRI</td>
+                        <td>TOTAL</td>
                     </tr>
                 </thead>
                 <!-- Data -->
                 <tbody>
                     <td id="sync-warning" class="d-none" colspan="10"><span class="text-danger opacity-75"
                             style="color: red;">Driver Manifest has not yet been Synchrosnized with the Ontrac Server,
-                            Click "Pull Report" to Sync. [ <a class="link-primary">(<span id="driverLength" class="" onclick="showUploadedDrivers()"></span>)</a> ]</span></td>
+                            Click "Pull Report" to Sync. [ <a class="link-primary">(<span id="weeklyReportDriverLength" class="" onclick="showUploadedDrivers()"></span>)</a> ]</span></td>
                 </tbody>
-                <tfoot id="driverPlaceHolder" class="d-none border-0">
+                <tfoot id="weeklyReportDriverPlaceHolder" class="d-none border-0">
                     <tr class="placeholder-wave ">
                         <td colspan="10" class="opacity-75"><span class="placeholder col-12"> IC #</span></td>
                     </tr>
@@ -79,5 +78,4 @@
             </table>
         </div>
     </div>
-    <script src="<%= body.publicFolder %>js/report.js" type="text/javascript"></script>
 </section>

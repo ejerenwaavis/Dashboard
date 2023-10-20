@@ -133,6 +133,7 @@ const userSchema = new mongoose.Schema({
   approvalNotes:[{description:String, adminEmail: { type: String, default: "" }, adminUsername:String, date:Date}],
   verified: { type: Boolean, default: false },
   isProUser: { type: Boolean, default: false },
+  isSuperAdmin: { type: Boolean, default: false },
   renews: { type: Date, default: new Date() },
   usageCount: { type: Number, default: 0 },
 });
