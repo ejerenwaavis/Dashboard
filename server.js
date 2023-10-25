@@ -308,6 +308,32 @@ var reports;
 
 
 
+const driverReportSchema = new mongoose.Schema({
+    _id: String, // driverNumber-date
+    date: {type:Date, default: new Date().setHours(0,0,0,0)},
+    driverNumber: Number,
+    driverName: String, 
+    driverAllias: String, 
+    manifest:[{
+        brand: String,
+        barcode: String,
+        isPriority: Boolean,
+        lastScan: String,
+        Events: {type:[{}], default:null},
+        name: String,
+        street: String,
+        city: String,
+        state: String,
+        country: String,
+    }],
+    lastUpdated: {type:Date, default:null},
+});
+const DriverReport = reportConn.model("DriverReport", driverReportSchema);
+var driverReports;
+
+
+
+
 /***********************BUSINESS LOGIC ************************************/
 
 app.route(APP_DIRECTORY + "/")
@@ -573,6 +599,13 @@ app.route(APP_DIRECTORY + "/saveDriverStatus")
 
 
 app.route(APP_DIRECTORY + "/getReport")
+  .get(async function (req, res) {
+    let today = await getToday();
+    let report = await Report.find({_id:today},'-__v');
+    res.send(report);
+})
+
+app.route(APP_DIRECTORY + "/getDriverReport")
   .get(async function (req, res) {
     let today = await getToday();
     let report = await Report.find({_id:today},'-__v');
