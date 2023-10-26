@@ -77,7 +77,7 @@ async function pullPastReport(dateTime) {
       totalStops = await response[0].drivers.reduce((accumulator, driver) => {
                         return accumulator + driver.manifest.length;
                       }, 0);
-      let updatedDrivers = await displayReport(response, {dateTime:dateTime});
+      let updatedDrivers = await displayReport(response[0].drivers, {dateTime:dateTime});
       drivers = updatedDrivers;
       updateLoadStatus("Saving Updates...")
       let result = {successfull: false, msg:"No need to save on an old report for accuracy reasons"}//await saveDriverStatus(response[0]._id, updatedDrivers);
