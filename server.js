@@ -625,7 +625,7 @@ app.route(APP_DIRECTORY + "/saveDriverStatus")
         }
       }else{
         console.log("Couldnt find old driver" + req.body.driver?._id);
-        res.send({successfull:false, error:err, msg:"Querry with the ID Returned nothing: " + driver._id})
+        res.send({successfull:false, error:"NOTFOUND", msg:"Querry with the ID Returned nothing: " + driver._id})
       }
   })
 

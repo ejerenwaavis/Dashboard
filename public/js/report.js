@@ -207,7 +207,7 @@ async function displayReport(report, opts) {
     let problemStops = [];
     let html = '<tr class="table-bordered">';
     html += '<td>'+driver.driverNumber+'</td>';
-    let driverName = driver.driverName;
+    let driverName = driver.driverName ?? await getDriverName(driver.driverNumber);
     console.log("Working on _ "+ driverName);
 
     // driver.driverName = driverName;
@@ -395,9 +395,13 @@ async function displayReport(report, opts) {
     html="";
     // driverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls,ofd:ofd,del:del,attempts:attempts, problemStops:problemStops}});
     // driverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}})
-    saveIndividualDriverStatus(driver).then((res) => {
-      console.log('saved', res);
-    });
+    if(!opts){
+      saveIndividualDriverStatus(driver).then((res) => {
+        console.log('saved', res);
+      });
+    }else{
+      
+    }
     
     clientDeiverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}})
   } //End of Driver Loop
@@ -845,12 +849,13 @@ async function newerEvent(events1, events2) {
 
 async function todaysEvents(events, dateTime){
   let finalEvents = [];
-  let today = (new Date(dateTime)).setHours(0,0,0,0);
-  let date = today.getDate();
+  let today = (new Date(dateTime)).setHours(28,0,0,0);
+  // let date = today.getDate();
   let reversedEvents = [...events].reverse();
   for await(event of reversedEvents){
     eventDate = new Date(event.UtcEventDateTime).setHours(0,0,0,0);
-    if(eventDate <= date){
+    // console.log("eventDate ", eventDate, " -- today: ", today );
+    if(eventDate <= today){
       finalEvents.push(event);
     }
   }
