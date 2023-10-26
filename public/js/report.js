@@ -30,25 +30,25 @@ async function pullReport() {
   $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="report-process-status" role="status">Loading...</span></span>');
   // let manifestProcessing = await processManifests();
   // console.log(manifestProcessing);
-  $.get(domain + '/getReport', async function (response) {
-    if(response.length > 0){
+  $.get(domain + '/getDriverReport', async function (drivers) {
+    if(drivers.length > 0){
       console.log('Processing Report');
-      console.log(response);
-      totalStops = await response[0].drivers.reduce((accumulator, driver) => {
+      console.log(drivers);
+      totalStops = await drivers.reduce((accumulator, driver) => {
                         return accumulator + driver.manifest.length;
                       }, 0);
-      let updatedDrivers = await displayReport(response);
-      drivers = updatedDrivers;
-      updateLoadStatus("Saving Updates...")
-      let result = await saveDriverStatus(response[0]._id, updatedDrivers);
-      if(result.successfull){
-        $('#lastUpdated').text(' Last Updated: ' + new Date(result.updatedDoc.lastUpdated).toLocaleString());
-        // console.log(result);
-        pullFromServer = false;
-        console.log('Saved Online Copy Successsfully');
+      let result = await displayReport(drivers);
+      drivers = result.drivers;
+      updateLoadStatus("Finalizing Updates...")
+      // let result = await saveDriverStatus(response[0]._id, updatedDrivers);
+      if(result.lastUpdated){
+        $('#lastUpdated').text(' Last Updated: ' + result.lastUpdated);
+      //   // console.log(result);
+      //   pullFromServer = false;
+      //   console.log('Saved Online Copy Successsfully');
       }else{
         pullFromServer = false;
-        console.error('Failed to save Online version');
+      //   console.error('Failed to save Online version');
       }
       $("#pullRequestButton").removeClass("disabled");
       $("#pullRequestButton").html('Pull Report');
@@ -111,43 +111,43 @@ async function pullLocalReport() {
   // let manifestProcessing = await processManifests();
   // console.log(manifestProcessing);
   let updatdReport = null;
-  await $.get(domain + '/getReport', async function (response) {
-    if(response.length > 0){
+  await $.get(domain + '/getDriverReport', async function (drivers) {
+    if(drivers.length > 0){
       console.log('Processing Local Report');
-      console.log(response);
-      if(response[0].lastUpdated != null){
-        totalStops = await response[0].drivers.reduce((accumulator, driver) => {
+      console.log(drivers);
+      if(drivers[(drivers.length - 1)].lastUpdated != null){
+        totalStops = await drivers.reduce((accumulator, driver) => {
                         return accumulator + driver.manifest.length;
                       }, 0);
         // console.log("total Stop Count is: "+ totalStops);
-        updatdReport = await displayReport(response);
-        drivers = updatdReport;
-        let result = {successfull:false};
+        let result = await displayReport(drivers);
+        drivers = result.drivers;
+        
         if(totalOnlinePulls > 0){
           updateLoadStatus("Saving Changes...")
-          result = await saveDriverStatus(response[0]._id, updatdReport);
+          // result = await saveDriverStatus(response[0]._id, updatdReport);
         }else{
           updateLoadStatus("Finalizing Local Report...")
         }
 
-        if(result.successfull){
-          $('#lastUpdated').text(' Last Updated: ' + new Date(result.updatedDoc.lastUpdated).toLocaleString());
+        if(result.lastUpdated){
+          $('#lastUpdated').text(' Last Updated: ' + result.lastUpdated);
           // console.log(result);
           pullFromServer = false;
-          console.log('Saved Online Copy Successsfully');
+          // console.log('Saved Online Copy Successsfully');
         }else{
            pullFromServer = false;
-          console.log('Failed to Save Online Copy : ' + (result.successfull ? result : "No changes - Total Pulls = "+totalOnlinePulls));
+          // console.log('Failed to Save Online Copy : ' + (result.successfull ? result : "No changes - Total Pulls = "+totalOnlinePulls));
         }
         // console.log(updatdReport);
-        if(updatdReport.lastUpdated){
-          $('#lastUpdated').text(' Last Updated: ' + new Date(updatdReport.lastUpdated).toLocaleString());
+        if(result.lastUpdated){
+          $('#lastUpdated').text(' Last Updated: ' + new Date(result.lastUpdated).toLocaleString());
         }else{
           $('#lastUpdated').text(' Showing Local Report');
         }
       }else{
-        onloadReport = response[0];
-        $('#driverLength').text(onloadReport.drivers.length + " Drivers");
+        onloadReport = drivers;
+        $('#driverLength').text(onloadReport.length + " Drivers");
         $('#sync-warning').removeClass("d-none");
       }
       $("#pullRequestButton").removeClass("disabled");
@@ -182,7 +182,7 @@ async function displayReport(report, opts) {
   let bigHtml="";
   let driverStatus = [];
   let driverCount = 0;
-  let drivers = report[0].drivers;
+  let drivers = report;
   totalOnlinePulls = 0;
   stopCount = 0;
   mslEvents = ['ONHD','HW','DWDD','EMAR','RB','LOAD','SFCT','Returned','CR'];
@@ -207,9 +207,10 @@ async function displayReport(report, opts) {
     let problemStops = [];
     let html = '<tr class="table-bordered">';
     html += '<td>'+driver.driverNumber+'</td>';
-    let driverName = await getDriverName(driver.driverNumber);
+    let driverName = driver.driverName;
     console.log("Working on _ "+ driverName);
-    driver.driverName = driverName;
+
+    // driver.driverName = driverName;
     var latestEvent = ((new Date((reportDateTime? reportDateTime :new Date()))).setHours(0,0,0,0));
     // console.log(latestEvent);
     let count = 0;
@@ -268,7 +269,6 @@ async function displayReport(report, opts) {
         }
 
         if(stop.Events != 404 && stop.Events != 500){
-            // console.log(stop.Events);
           let stopEventTime = (new Date(stop.Events[0].UtcEventDateTime)).getTime()
           
           if(stopEventTime > latestEvent){
@@ -284,29 +284,27 @@ async function displayReport(report, opts) {
                 del.push(stop);
             }else if(OFD){
               // console.log(stop);
-                const containsPriority = await priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
-                if(containsPriority){
+                if(stop.isPriority){
                   pofd.push(stop);
                 }else{
                   ofd.push(stop);
                 }
             }else if(attempted){
-                const isPriorityPackage = await isPriority(stop);
-                if(isPriorityPackage){
+                if(stop.isPriority){
                   pattempts.push(stop);
                 }else{
                   attempts.push(stop);
                 }
             }else if(isInMLS){
-                const isPriorityPackage = await isPriority(stop);
-                if(isPriorityPackage){
+                
+                if(stop.isPriority){
                   pmls.push(stop);
                 }else{
                   mls.push(stop);
                 }
             }else{
-              console.log("Cant Process Package: "+ stop.barcode);
-              console.log("Cant Process Package: "+ stop.Events[0]);
+              console.log("Cant Process Package: ", stop.barcode);
+              console.log("Cant Process Package: ", stop.Events[0]);
               problemStops.push(stop);
             }
           }else{ //add whaever that doesent have a last scanned on it to MLS and edit the status to show that.
@@ -314,15 +312,15 @@ async function displayReport(report, opts) {
             if(delivered){
               if(!stop.Events[0].Status.includes("MLS"))
               stop.Events[0].Status = stop.Events[0].Status + ' | MLS';  
-              const isPriorityPackage = await isPriority(stop);
-                if(isPriorityPackage){
+              
+                if(stop.isPriority){
                   pmls.push(stop);
                 }else{
                   mls.push(stop);
                 }
             }else if(OFD){
-                const isPriorityPackage = await isPriority(stop);
-                if(isPriorityPackage){
+                
+                if(stop.isPriority){
                   if(!stop.Events[0].Status.includes("MLS"))
                   stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
                   pmls.push(stop);
@@ -334,8 +332,8 @@ async function displayReport(report, opts) {
             }else if(attempted){
                   if(!stop.Events[0].Status.includes("MLS"))
                   stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
-                  const isPriorityPackage = await isPriority(stop);
-                  if(isPriorityPackage){
+                  
+                  if(stop.isPriority){
                     pmls.push(stop);
                   }else{
                     mls.push(stop);
@@ -343,8 +341,7 @@ async function displayReport(report, opts) {
             }else if(isInMLS){
                 if(!stop.Events[0].Status.includes("MLS"))
                 stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
-                const isPriorityPackage = await isPriority(stop);
-                if(isPriorityPackage){
+                if(stop.isPriority){
                   pmls.push(stop);
                 }else{
                   mls.push(stop);
@@ -363,9 +360,12 @@ async function displayReport(report, opts) {
           eventCodes.some(c => c.EventCode == code.EventCode)? null : eventCodes.push(code);
         }
       } catch (error) {
+        console.log("Error Caught?");
+        console.log(error);
         problemStops.push(stop);
       }
-    }
+    } // End of Manifest Loop
+
     let loadNumber = ofd.length + attempts.length + del.length;
     let progressCalc = Math.trunc(((del.length + attempts.length)/loadNumber) * 100);
     progress = (isNaN(progressCalc) ? 0 : progressCalc);
@@ -383,6 +383,7 @@ async function displayReport(report, opts) {
     html+="</tr>";
     let quickHtml = html;
     bigHtml += html;
+
     if(driverCount >= drivers.length){
       $('#driverPlaceHolder').addClass('d-none');
     }
@@ -394,15 +395,20 @@ async function displayReport(report, opts) {
     html="";
     // driverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls,ofd:ofd,del:del,attempts:attempts, problemStops:problemStops}});
     // driverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}})
+    saveIndividualDriverStatus(driver).then((res) => {
+      console.log('saved', res);
+    });
+    
     clientDeiverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}})
-  }
+  } //End of Driver Loop
+
   // clientDeiverStatus = driverStatus;
   console.log("Total Pulls: "+totalOnlinePulls);
   if(eventCodes.problemStops.length > 0){
     console.log(eventCodes);
   }
   console.log(eventCodes);
-  return drivers;
+  return {drivers:drivers, lastUpdated:new Date().toLocaleString()};
 }
 
 async function showDetailedStops(evt){
@@ -611,9 +617,29 @@ function saveDriverStatus(reportID, updatedDrivers) {
     });
   });
 }
+
+
+async function saveIndividualDriverStatus(driver) {
+    let url = domain + '/saveIndividualDriverStatus';
+    await $.post(url, {driver:driver}, function(result) {
+      if(result.successfull){
+        return result;
+      }else{
+        console.log(result.msg);
+        return(result);
+      }
+    }).fail(function(error) {
+      console.log("Handling an API call error");
+      return(error);
+    }).catch(err => {
+      console.log("Error Saving: "+ driver.driverName);
+    })
+}
+
  function stopOullingProcess() {
   stopReportPull = true;
  }
+
  
 function processManifests() {
   return new Promise((resolve, reject) => {

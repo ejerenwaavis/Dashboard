@@ -598,6 +598,37 @@ app.route(APP_DIRECTORY + "/saveDriverStatus")
   })
 
 
+  app.route(APP_DIRECTORY + "/saveIndividualDriverStatus")
+  .post(async function (req, res) {
+      //save reuest body object to database
+      let driver = req.body.driver;
+      let oldDriver = await DriverReport.findOne({_id:driver._id})
+
+      if(oldDriver){
+        // console.log('found oldDriver Report');
+        for await (const stop of driver.manifest){
+          if(stop.Events){
+            oldStopIndex = oldDriver.manifest.findIndex(os => os.barcode === stop.barcode);
+            oldDriver.manifest[oldStopIndex].Events = stop.Events;
+          }
+        }
+        try{
+          oldDriver.lastUpdated = new Date();
+          result = await oldDriver.save();
+          if(result){
+            res.send({successfull:true, msg:"updated single driver: "+driver.driverName})
+          }else{
+            res.send({successfull:false, msg:"Save Incomplete"})
+          }
+        }catch(err){
+          res.send({successfull:false, error:err, msg:"Failed to perform save: "+driver.driverName})
+        }
+      }else{
+        console.log("Couldnt find old driver" + req.body.driver?._id);
+        res.send({successfull:false, error:err, msg:"Querry with the ID Returned nothing: " + driver._id})
+      }
+  })
+
 app.route(APP_DIRECTORY + "/getReport")
   .get(async function (req, res) {
     let today = await getToday();
@@ -608,7 +639,7 @@ app.route(APP_DIRECTORY + "/getReport")
 app.route(APP_DIRECTORY + "/getDriverReport")
   .get(async function (req, res) {
     let today = await getToday();
-    let report = await Report.find({_id:today},'-__v');
+    let report = await DriverReport.find({date:today},'-__v');
     res.send(report);
 })
 
@@ -677,42 +708,6 @@ app.route(APP_DIRECTORY + "/getDriverName/:driverNumber")
 
 
 
-/***************** Handling Payments  ********************/
-app.post(APP_DIRECTORY + '/create-checkout-session', async (req, res) => {
-  const { priceId } = req.body;
-
-  // See https://stripe.com/docs/api/checkout/sessions/create
-  // for additional parameters to pass.
-  try {
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          // For metered billing, do not pass quantity
-          quantity: 1,
-        },
-      ],
-      // {CHECKOUT_SESSION_ID} is a string literal; do not change it!
-      // the actual Session ID is returned in the query parameter when your customer
-      // is redirected to the success page.
-      success_url: 'https://example.com/success.html?session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: 'https://example.com/canceled.html',
-    });
-
-    res.send({
-      sessionId: session.id,
-    });
-  } catch (e) {
-    res.status(400);
-    return res.send({
-      error: {
-        message: e.message,
-      }
-    });
-  }
-});
 
 
 try{
