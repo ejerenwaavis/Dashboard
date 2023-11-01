@@ -487,10 +487,10 @@ async function displayOfflineReport(report, opts) {
           //   latestEvent = stopEventTime;
           // }
 
-          let delivered = stop.lastScan === "Delivered" ?? false;
-          let attempted = stop.lastScan === "Attempted" ?? false;
-          let isInMLS = stop.lastScan === "" ?? false;
-          let OFD = stop.lastScan === "Loaded" ?? false;
+          let delivered = stop.Events? await isDelivered(stop) : (stop.lastScan === "Delivered");
+          let attempted = stop.Events? await isAttempted(stop) : (stop.lastScan === "Attempted");
+          let isInMLS = stop.Events? await isMLS(stop) : (stop.lastScan === "");
+          let OFD = stop.Events? await isOFD(stop) : (stop.lastScan === "Loaded");
           if(stop.lastScan){ // this makes sure that only pieces that wew scanned are taken into consideration of displaying on delivered or attempts...e.t.c 
             if(delivered){
                 del.push(stop);
