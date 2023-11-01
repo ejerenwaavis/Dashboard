@@ -719,7 +719,7 @@ app.route(APP_DIRECTORY + "/getReport/:date")
     }
 })
 
-app.route(APP_DIRECTORY + "/getReport/:date")
+app.route(APP_DIRECTORY + "/getDriverReport/:date")
   .get(async function (req, res) {
     let param = Number(req.params.date);
     let date = (new Date(param)).setHours(0,0,0,0);
