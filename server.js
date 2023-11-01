@@ -328,7 +328,7 @@ const driverReportSchema = new mongoose.Schema({
     }],
     lastUpdated: {type:Date, default:null},
 });
-const DriverReport = reportConn.model("DriverReport", driverReportSchema);
+const DriverReport = reportConn.model("DevDriverReport", driverReportSchema);
 var driverReports;
 
 
@@ -569,7 +569,10 @@ app.route(APP_DIRECTORY + "/deleteAccess")
 
 
 
-/* Handling Report Requests */
+
+
+/********** Handling Report Requests ***********/
+
 app.route(APP_DIRECTORY + "/extractReport")
   .get(async function (req, res) {
     let url = 'https://triumphcourier.com/mailreader/extract';
@@ -638,9 +641,68 @@ app.route(APP_DIRECTORY + "/getReport")
 
 app.route(APP_DIRECTORY + "/getDriverReport")
   .get(async function (req, res) {
+    let errors = [];
     let today = await getToday();
     let report = await DriverReport.find({date:today},'-__v');
-    res.send(report);
+    if(report.length){
+      res.send(report);
+    }else{
+      let drivers = [];
+      let singleReport = await Report.find({_id:today},'-__v');
+      if(singleReport.length){
+        console.log("Converting found SingleReport...");
+        singleReport = singleReport[0];
+        // process and save to new database
+          for await(const driver of singleReport.drivers){
+            let driverDocManifest = [];
+            for await (const stop of driver.manifest){
+              let newStop = {
+                brand: stop.brand,
+                barcode: stop.barcode,
+                lastScan: stop.lastScan,
+                Events: stop.Events,
+                name: stop.name,
+                street: stop.street,
+                city: stop.city,
+                state: stop.state,
+                country: stop.country,
+              }
+              if(!stop.isPriority){
+                newStop.isPriority = await isPriority(stop.brand);
+                // console.log("assigned Ispriority: ", stop.isPriority);
+              }
+              console.log("adding stop with a priority: ", newStop.isPriority);
+              driverDocManifest.push(newStop);
+            }
+            let driverDoc = new DriverReport({
+                _id: driver.driverNumber + "-" + today, // driverNumber-date
+                date: today,
+                driverNumber: driver.driverNumber, 
+                driverName: await getDriverName(driver.driverNumber), 
+                driverAllias: "N/A", 
+                manifest:driverDocManifest,
+                lastUpdated: singleReport.lastUpdated,
+            });
+            let saveResult = await driverDoc.save();
+            if(saveResult){
+              drivers.push(driverDoc);
+            }else{
+              errors.push(driverDoc)
+            }
+          }
+          //send saved data to client
+          if(drivers.length > 0){
+            res.send(drivers);
+            console.log(drivers);
+        }else{
+          res.send({error:errors, msg:"Error In Converting"});
+        }
+      }else{
+        //send empty report if cant find from old and new database
+        console.log("No SingleReports Either");
+        res.send({error:"", msg:"Found Nothing, check old database"});
+      }
+    }
 })
 
 app.route(APP_DIRECTORY + "/getReport/:date")
@@ -654,6 +716,20 @@ app.route(APP_DIRECTORY + "/getReport/:date")
       res.send(report);
     }else{
       res.send({err:"Not Found", msg:"" + param});
+    }
+})
+
+app.route(APP_DIRECTORY + "/getReport/:date")
+  .get(async function (req, res) {
+    let param = Number(req.params.date);
+    let date = (new Date(param)).setHours(0,0,0,0);
+    // console.log(param);
+    // console.log(date);
+    if(param){
+      let report = await DriverReport.find({_id:date},'-__v');
+      res.send(report);
+    }else{
+      res.send({err:"Not Found", msg:"",param});
     }
 })
 
@@ -1122,7 +1198,6 @@ function populateExcelData(fileName, addresses) {
   });
 }
 
-// http://localhost:3025/routingAssistanttmp/RW_-_Tue_Jun_13_2023_19-24_ejerenwaavis@gmail.com.xlsx
 
 async function populateExcelDataRoute4Me(fileName, addresses) {
   return new Promise(function (resolve,reject){
@@ -1507,7 +1582,26 @@ function outputDate() {
 }
 
 
-priorityBrands = [
+
+async function isPriority(brandName) {
+  if(priorityBrands != null){
+    result = await priorityBrands.some(p => (p.name).toLowerCase() == (brandName).toLowerCase());
+    return result;
+  }else{
+    console.log("Unable to Check for Priority");
+    return false;
+  }
+}
+
+async function getDriverName(driverNumber){
+    driver = await (contractors.filter((c) => c.driverNumber.toString() === driverNumber.toString()))[0];
+    driverNumberStr = "" + driverNumber;
+    return (driver ?  driver.name : "***" + driverNumberStr.substring(3));
+}
+
+
+
+const priorityBrands = [
   { trackingPrefixes : [], name : 'Eat Clean To Go'},
   { trackingPrefixes : [], name : 'Coldcart, Inc.'},
   { trackingPrefixes : [], name : 'Grip Shipping Inc'},
@@ -1527,7 +1621,7 @@ priorityBrands = [
 ]
 
 
-contractors = [
+const contractors = [
   { driverNumber : '203593', name : 'Frankie ROBINSON'},
   { driverNumber : '219029', name : 'Andreea OKONTA'},
   { driverNumber : '227410', name : 'Yacouba NABE'},
@@ -1608,5 +1702,17 @@ contractors = [
   { driverNumber : '268717', name : 'Reshonnah HARVEY'},
   { driverNumber : '268845', name : 'Christian GALVEZ'},
   { driverNumber : '269487', name : 'Justin MCCALLA'},
-  { driverNumber : '269640', name : 'Jesus CONTRERAS QUINTERO'}
+  { driverNumber : '269640', name : 'Jesus CONTRERAS QUINTERO'},
+  { driverNumber : '271385', name : 'Kiara MADDEN'},
+  { driverNumber : '271386', name : 'Morris BRATTS'},
+  { driverNumber : '271388', name : 'Ronald TORRES BACALAO'},
+  { driverNumber : '271464', name : 'Blondy MEDINA'},
+  { driverNumber : '271670', name : 'Eliana CORREA MORENO'},
+  { driverNumber : '271881', name : 'Joe CEBALLOS'},
+  { driverNumber : '272105', name : 'Sadan SYLLA'},
+  { driverNumber : '272246', name : 'Angela MOSLEY'},
+  { driverNumber : '272595', name : 'Maykelin PEROZO'},
+  { driverNumber : '272612', name : 'Shiquita JAMES'},
+  { driverNumber : '272883', name : 'Briana HARPER'},
+  { driverNumber : '272950', name : 'Tiffany SWANSON'},
 ]

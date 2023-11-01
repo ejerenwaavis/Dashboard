@@ -145,9 +145,10 @@ async function pullLocalReport() {
         }else{
           $('#lastUpdated').text(' Showing Local Report');
         }
-      }else{
-        onloadReport = drivers;
-        $('#driverLength').text(onloadReport.length + " Drivers");
+      }else{ // if we havent pulled from server
+        // onloadReport = drivers;
+        offlineReport = await displayOfflineReport(drivers);
+        $('#driverLength').text(offlineReport?.drivers?.length + " Drivers");
         $('#sync-warning').removeClass("d-none");
       }
       $("#pullRequestButton").removeClass("disabled");
@@ -184,6 +185,7 @@ async function displayReport(report, opts) {
   let driverCount = 0;
   let drivers = report;
   totalOnlinePulls = 0;
+  let totalOnlineDriverPulls = 0;
   stopCount = 0;
   mslEvents = ['ONHD','HW','DWDD','EMAR','RB','LOAD','SFCT','Returned','CR'];
 
@@ -191,6 +193,7 @@ async function displayReport(report, opts) {
   drivers.lastUpdated = report[0].lastUpdated;
 
   for await(const driver of drivers ){
+    totalOnlineDriverPulls = 0;
     if(stopReportPull){
       console.log("broke outta drivers loop");
         break;
@@ -238,7 +241,8 @@ async function displayReport(report, opts) {
             }else{
               stop.Events = 404;
             }
-            totalOnlinePulls++; 
+            totalOnlinePulls++;
+            totalOnlineDriverPulls ++;
           }else if((await isDelivered(stop))){
             console.log("Already Delivered. not puling from external source");
           }else if(pullFromServer){
@@ -264,6 +268,7 @@ async function displayReport(report, opts) {
               stop.Events = 500;
             }
             totalOnlinePulls++;
+            totalOnlineDriverPulls++;
             // console.log(stop);
           }
         }
@@ -393,20 +398,22 @@ async function displayReport(report, opts) {
       $('#reportDetails tbody').prepend(quickHtml);
     }
     html="";
-    // driverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls,ofd:ofd,del:del,attempts:attempts, problemStops:problemStops}});
-    // driverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}})
+    driverStatus.push({driverName:driverName, driverNumber:driver.driverNumber, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
     if(!opts){
-      saveIndividualDriverStatus(driver).then((res) => {
-        console.log('saved', res);
-      });
+      if(totalOnlineDriverPulls){
+        saveIndividualDriverStatus(driver).then((res) => {
+          console.log('saved', res);
+        });
+      }else{
+        console.log("aint saving shit");
+      }
     }else{
-      
+      console.log("Backdateed Report! DO NOT SAVE");
     }
     
-    clientDeiverStatus.push({name:driverName, driverNumber:driver.driverNumber, updatedManifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}})
   } //End of Driver Loop
 
-  // clientDeiverStatus = driverStatus;
+  clientDeiverStatus = driverStatus;
   console.log("Total Pulls: "+totalOnlinePulls);
   if(eventCodes.problemStops.length > 0){
     console.log(eventCodes);
@@ -414,6 +421,208 @@ async function displayReport(report, opts) {
   console.log(eventCodes);
   return {drivers:drivers, lastUpdated:new Date().toLocaleString()};
 }
+
+
+async function displayOfflineReport(report, opts) {
+  $('#reportDetails tbody').html("")
+  $('#driverPlaceHolder').removeClass('d-none');
+  let reportDateTime = null;
+  if(opts){
+    if(opts['dateTime']){
+      reportDateTime = opts['dateTime'];
+      console.log("Pulling Infomations for the :"+ new Date(reportDateTime).getDate() + "th");
+    }
+  } 
+  let bigHtml="";
+  let driverStatus = [];
+  let driverCount = 0;
+  let drivers = report;
+  // totalOnlinePulls = 0;
+  // let totalOnlineDriverPulls = 0;
+  stopCount = 0;
+  mslEvents = ['ONHD','HW','DWDD','EMAR','RB','LOAD','SFCT','Returned','CR'];
+
+
+  drivers.lastUpdated = report[0].lastUpdated;
+
+  for await(const driver of drivers ){
+    // totalOnlineDriverPulls = 0;
+    if(stopReportPull){
+      console.log("broke outta drivers loop");
+        break;
+    }
+    driverCount++;
+    let ofd = [];
+    let pofd = [];
+    let del = [];
+    let mls = [];
+    let pmls = [];
+    let load = [];
+    let attempts = [];
+    let pattempts = [];
+    let problemStops = [];
+    let html = '<tr class="table-bordered">';
+    html += '<td>'+driver.driverNumber+'</td>';
+    let driverName = driver.driverName ?? await getDriverName(driver.driverNumber);
+    console.log("Working on _ "+ driverName);
+
+    // driver.driverName = driverName;
+    var latestEvent = ((new Date((reportDateTime? reportDateTime :new Date()))).setHours(0,0,0,0));
+    // console.log(latestEvent);
+    let count = 0;
+    for await(const stop of driver.manifest){
+      stopCount ++;
+      updateLoadStatus((Math.trunc(((stopCount/totalStops) * 100))) + "% Loading...");
+      if(stopReportPull){
+        console.log("broke outta stop loop");
+        break;
+      }
+      // console.log((count++)+'/'+driver.manifest.length);
+
+      
+        if(stop.lastScan){
+          // let stopEventTime = (new Date(stop.Events[0].UtcEventDateTime)).getTime()
+          
+          // if(stopEventTime > latestEvent){
+          //   latestEvent = stopEventTime;
+          // }
+
+          let delivered = stop.lastScan === "Delivered" ?? false;
+          let attempted = stop.lastScan === "Attempted" ?? false;
+          let isInMLS = stop.lastScan === "" ?? false;
+          let OFD = stop.lastScan === "Loaded" ?? false;
+          if(stop.lastScan){ // this makes sure that only pieces that wew scanned are taken into consideration of displaying on delivered or attempts...e.t.c 
+            if(delivered){
+                del.push(stop);
+            }else if(OFD){
+              // console.log(stop);
+                if(stop.isPriority){
+                  pofd.push(stop);
+                }else{
+                  ofd.push(stop);
+                }
+            }else if(attempted){
+                if(stop.isPriority){
+                  pattempts.push(stop);
+                }else{
+                  attempts.push(stop);
+                }
+            }else if(isInMLS){
+                
+                if(stop.isPriority){
+                  pmls.push(stop);
+                }else{
+                  mls.push(stop);
+                }
+            }else{
+              console.log("Cant Process Package: ", stop.barcode);
+              console.log("Cant Process Package: ", stop.lastScan);
+              problemStops.push(stop);
+            }
+          }else{ //add whaever that doesent have a last scanned on it to MLS and edit the status to show that.
+            if(delivered){
+              if(!stop.Events[0].Status.includes("MLS"))
+              stop.Events[0].Status = stop.Events[0].Status + ' | MLS';  
+              
+                if(stop.isPriority){
+                  pmls.push(stop);
+                }else{
+                  mls.push(stop);
+                }
+            }else if(OFD){
+                
+                if(stop.isPriority){
+                  if(!stop.Events[0].Status.includes("MLS"))
+                  stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+                  pmls.push(stop);
+                }else{
+                  if(!stop.Events[0].Status.includes("MLS"))
+                  stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+                  mls.push(stop);
+                }
+            }else if(attempted){
+                  if(!stop.Events[0].Status.includes("MLS"))
+                  stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+                  
+                  if(stop.isPriority){
+                    pmls.push(stop);
+                  }else{
+                    mls.push(stop);
+                  }
+            }else if(isInMLS){
+                if(!stop.Events[0].Status.includes("MLS"))
+                stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+                if(stop.isPriority){
+                  pmls.push(stop);
+                }else{
+                  mls.push(stop);
+                }
+            }else{
+              console.log("Cant Process Package: "+ stop.barcode);
+              problemStops.push(stop);
+            }
+          }
+          // code = {EventCode:stop.Events[0].EventCode, EventShortDescription:stop.Events[0].EventShortDescription, 
+          //         details:{driver:driverName, stopName:stop.name, barcode:stop.barcode}};
+          
+          // eventCodes.some(c => c.EventCode == code.EventCode)? null : eventCodes.push(code);
+        }else{
+          // if package isnt scanned
+          let isInMLS = stop.lastScan === "" ?? false;
+          if(isInMLS){
+              if(stop.isPriority){
+                pmls.push(stop);
+              }else{
+                mls.push(stop);
+              }
+            }
+        }
+    
+    } // End of Manifest Loop
+
+    let loadNumber = ofd.length + attempts.length + del.length;
+    let progressCalc = Math.trunc(((del.length + attempts.length)/loadNumber) * 100);
+    progress = (isNaN(progressCalc) ? 0 : progressCalc);
+    
+    html += '<td>'+driverName+'</td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="load" onclick="showDetailedStops(this)">'+(loadNumber)+'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="ofd" '+(ofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ ofd.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="pofd" '+(pofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ pofd.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="del" '+(del.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ del.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0 '+(pattempts.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="attempts" '+((pattempts.length + attempts.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pattempts.length + attempts.length) +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0 '+(pmls.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="mls" '+((pmls.length + mls.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pmls.length + mls.length) +'</a></td>';
+    html += '<td> <div class="progress bg-secondary"> <div class="progress-bar '+(progress > 99? "bg-success" : ((progress > 30) ? "bg-warning": "bg-danger"))+'" role="progressbar" style="width: '+progress+'%;"'
+                  +'aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">'+progress+'%</div></div></td>';
+    html += '<td>'+new Date(latestEvent).toLocaleString()+'</td>';
+    html+="</tr>";
+    let quickHtml = html;
+    bigHtml += html;
+
+    if(driverCount >= drivers.length){
+      $('#driverPlaceHolder').addClass('d-none');
+    }
+    if(progress > 99){
+      $('#reportDetails tbody').append(quickHtml);
+    }else{
+      $('#reportDetails tbody').prepend(quickHtml);
+    }
+    html="";
+    driverStatus.push({driverName:driverName, driverNumber:driver.driverNumber, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
+   
+    
+  } //End of Driver Loop
+
+  clientDeiverStatus = driverStatus;
+  console.log("Total Pulls: "+totalOnlinePulls);
+  // if(eventCodes.problemStops.length > 0){
+  //   console.log(eventCodes);
+  // }
+  // console.log(eventCodes);
+  return {drivers:drivers, lastUpdated:new Date().toLocaleString()};
+}
+
+
+
 
 async function showDetailedStops(evt){
   $('#detailModalTable thead').show();
@@ -423,24 +632,24 @@ async function showDetailedStops(evt){
 
   // console.log(drivers);
   driver = await clientDeiverStatus.find((d) => d.driverNumber === driverNumber);
-  driverName = driver.name;
+  driverName = driver.driverName;
   // console.log(driver);
   stopArray = [];
   // console.log(stopArray);
   if(stopType == "mls"){
-    stopArray = [...driver.updatedManifest.pmls,...driver.updatedManifest.mls];
+    stopArray = [...driver.manifest.pmls,...driver.manifest.mls];
   }else if (stopType == "ofd"){
-    stopArray = driver.updatedManifest.ofd;
+    stopArray = driver.manifest.ofd;
   }else if (stopType == "pofd"){
-    stopArray = driver.updatedManifest.pofd;
+    stopArray = driver.manifest.pofd;
   }else if (stopType == "load"){
-    stopArray = [...driver.updatedManifest.pofd,...driver.updatedManifest.ofd,...driver.updatedManifest.del,...driver.updatedManifest.pattempts,...driver.updatedManifest.attempts];
+    stopArray = [...driver.manifest.pofd,...driver.manifest.ofd,...driver.manifest.del,...driver.manifest.pattempts,...driver.manifest.attempts];
   }else if (stopType == "del"){
-    stopArray = driver.updatedManifest.del;
+    stopArray = driver.manifest.del;
   }else if (stopType == "attempts"){
-    stopArray = [...driver.updatedManifest.pattempts,...driver.updatedManifest.attempts];
+    stopArray = [...driver.manifest.pattempts,...driver.manifest.attempts];
   }else if (stopType == "problemStops"){
-    stopArray = driver.updatedManifest.problemStops;
+    stopArray = driver.manifest.problemStops;
   }
   
   for await (const stop of stopArray){
@@ -452,13 +661,13 @@ async function showDetailedStops(evt){
     html += '<td>'+ stop.street +'</td>';
     html += '<td> '+ stop.city +'</td>';
     html += '<td> '+ stop.state +'</td>';
-    html += '<td> '+ stop.Events[0].Status + '</td>';
-    html += '<td>'+new Date(stop.Events[0].UtcEventDateTime).toLocaleString()+'</td>';
-    html+="</tr>";
+    html += '<td> '+ ((stop.Events? stop.Events[0].Status : null) ?? stop.lastScan) + '</td>';
+    html += '<td>'+ (new Date((stop.Events? stop.Events[0].UtcEventDateTime : false) ?? driver.date).toLocaleString()) + '</td>';
+    html += "</tr>";
     $('#detailModalTable tbody').append(html);
   }
 
-  $("#detailsHeader").text(stopType.toUpperCase()+": "+driverName);
+  $("#detailsHeader").text(stopType.toUpperCase()+ ": "+driverName);
   
   const stopsDetailed = new bootstrap.Modal('#detailModal', {
     keyboard: true
@@ -627,6 +836,7 @@ async function saveIndividualDriverStatus(driver) {
     let url = domain + '/saveIndividualDriverStatus';
     await $.post(url, {driver:driver}, function(result) {
       if(result.successfull){
+        console.log("suceesfful save recorded for: ",driver.driverName);
         return result;
       }else{
         console.log(result.msg);

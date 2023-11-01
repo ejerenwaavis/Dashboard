@@ -67,12 +67,16 @@
                 </thead>
                 <!-- Data -->
                 <tbody>
-                    <td id="sync-warning" class="d-none" colspan="10"><span class="text-danger opacity-75"
-                            style="color: red;">Driver Manifest has not yet been Synchrosnized with the Ontrac Server,
-                            Click "Pull Report" to Sync. [ <a class="link-primary">(<span id="driverLength" class="" onclick="showUploadedDrivers()"></span>)</a> ]</span></td>
+                    
                 </tbody>
-                <tfoot id="driverPlaceHolder" class="d-none border-0">
-                    <tr class="placeholder-wave ">
+                <tfoot >
+                    <tr>
+                        <td id="sync-warning" class="d-none" colspan="10"><span class="text-danger opacity-75" style="color: red;">Driver
+                                Manifest has not yet been Synchrosnized with the Ontrac Server,
+                                Click "Pull Report" to Sync. [ <a class="link-primary">(<span id="driverLength" class=""
+                                        onclick="showUploadedDrivers()"></span>)</a> ]</span></td>
+                    </tr>
+                    <tr id="driverPlaceHolder" class="d-none border-0 placeholder-wave ">
                         <td colspan="10" class="opacity-75"><span class="placeholder col-12"> IC #</span></td>
                     </tr>
                 </tfoot>
