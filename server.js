@@ -653,47 +653,14 @@ app.route(APP_DIRECTORY + "/getDriverReport")
         console.log("Converting found SingleReport...");
         singleReport = singleReport[0];
         // process and save to new database
-          for await(const driver of singleReport.drivers){
-            let driverDocManifest = [];
-            for await (const stop of driver.manifest){
-              let newStop = {
-                brand: stop.brand,
-                barcode: stop.barcode,
-                lastScan: stop.lastScan,
-                Events: stop.Events,
-                name: stop.name,
-                street: stop.street,
-                city: stop.city,
-                state: stop.state,
-                country: stop.country,
-              }
-              if(!stop.isPriority){
-                newStop.isPriority = await isPriority(stop.brand);
-                // console.log("assigned Ispriority: ", stop.isPriority);
-              }
-              console.log("adding stop with a priority: ", newStop.isPriority);
-              driverDocManifest.push(newStop);
-            }
-            let driverDoc = new DriverReport({
-                _id: driver.driverNumber + "-" + today, // driverNumber-date
-                date: today,
-                driverNumber: driver.driverNumber, 
-                driverName: await getDriverName(driver.driverNumber), 
-                driverAllias: "N/A", 
-                manifest:driverDocManifest,
-                lastUpdated: singleReport.lastUpdated,
-            });
-            let saveResult = await driverDoc.save();
-            if(saveResult){
-              drivers.push(driverDoc);
-            }else{
-              errors.push(driverDoc)
-            }
-          }
+          processingResult = await convertSingleReport(singleReport,{date:today}); 
+          drivers = processingResult.drivers;
+          errors = [...errors,...processingResult.errors]
           //send saved data to client
-          if(drivers.length > 0){
+        if(drivers.length > 0){
             res.send(drivers);
-            console.log(drivers);
+            if(errors.length)
+            console.error(errors);
         }else{
           res.send({error:errors, msg:"Error In Converting"});
         }
@@ -723,11 +690,27 @@ app.route(APP_DIRECTORY + "/getDriverReport/:date")
   .get(async function (req, res) {
     let param = Number(req.params.date);
     let date = (new Date(param)).setHours(0,0,0,0);
+    let errors = [];
     // console.log(param);
     // console.log(date);
     if(param){
-      let report = await DriverReport.find({_id:date},'-__v');
-      res.send(report);
+      let report = await DriverReport.find({date:date},'-__v');
+      if(report.length){
+        res.send(report);
+      }else{
+        console.log('atempting to find past report in single DB');
+        report = await Report.find({_id:date},'-__v');
+        processingResult = await convertSingleReport(report[0],{date:date}); 
+        drivers = processingResult.drivers;
+        errors = [...errors,...processingResult.errors];
+        if(drivers.length > 0){
+            res.send(drivers);
+            if(errors.length)
+            console.error(errors);
+        }else{
+          res.send({error:errors, msg:"Error In Converting"});
+        }
+      }
     }else{
       res.send({err:"Not Found", msg:"",param});
     }
@@ -1544,6 +1527,55 @@ async function updateReportWithDrivers(id, updatedDrivers) {
     return {successfull:true, updatedDoc:updatedDoc, msg:"Driver Report updated Succesfully"}
   } catch (error) {
     console.error('Error:', error);
+  }
+}
+
+
+async function convertSingleReport(singleReport,opts) {
+  let today = opts ? opts.date : await getToday();
+  let drivers = [];
+  let errors = [];
+  for await(const driver of singleReport.drivers){
+    let driverDocManifest = [];
+    for await (const stop of driver.manifest){
+      let newStop = {
+        brand: stop.brand,
+        barcode: stop.barcode,
+        lastScan: stop.lastScan,
+        Events: stop.Events,
+        name: stop.name,
+        street: stop.street,
+        city: stop.city,
+        state: stop.state,
+        country: stop.country,
+      }
+      if(!stop.isPriority){
+        newStop.isPriority = await isPriority(stop.brand);
+        // console.log("assigned Ispriority: ", stop.isPriority);
+      }
+      console.log("adding stop with a priority: ", newStop.isPriority);
+      driverDocManifest.push(newStop);
+    }
+    let driverDoc = new DriverReport({
+        _id: driver.driverNumber + "-" + today, // driverNumber-date
+        date: today,
+        driverNumber: driver.driverNumber, 
+        driverName: await getDriverName(driver.driverNumber), 
+        driverAllias: "N/A", 
+        manifest:driverDocManifest,
+        lastUpdated: singleReport.lastUpdated,
+    });
+    let saveResult = await driverDoc.save();
+    if(saveResult){
+      drivers.push(driverDoc);
+    }else{
+      errors.push(driverDoc)
+    }
+  }
+  if(drivers.length > 0){
+    return {drivers:drivers, errors:errors};
+  }else{
+    return {errors:errors, drivers:drivers};
   }
 }
 
