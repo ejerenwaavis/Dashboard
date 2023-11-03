@@ -70,15 +70,15 @@ async function pullPastReport(dateTime) {
   $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="report-process-status" role="status">Loading...</span></span>');
   // let manifestProcessing = await processManifests();
   // console.log(manifestProcessing);
-  $.get(domain + '/getReport/'+dateTime, async function (response) {
-    if(response.length > 0){
+  $.get(domain + '/getDriverReport/'+dateTime, async function (drivers) {
+    if(drivers.length > 0){
       console.log('Processing Past Report');
-      console.log(response);
-      totalStops = await response[0].drivers.reduce((accumulator, driver) => {
+      console.log(drivers);
+      totalStops = await drivers.reduce((accumulator, driver) => {
                         return accumulator + driver.manifest.length;
                       }, 0);
-      let updatedDrivers = await displayReport(response[0].drivers, {dateTime:dateTime});
-      drivers = updatedDrivers;
+      let updatedDrivers = await displayReport(drivers, {dateTime:dateTime});
+      drivers = updatedDrivers.drivers;
       updateLoadStatus("Saving Updates...")
       let result = {successfull: false, msg:"No need to save on an old report for accuracy reasons"}//await saveDriverStatus(response[0]._id, updatedDrivers);
       if(result.successfull){
@@ -165,9 +165,6 @@ async function pullLocalReport() {
   });
   return updatdReport;
 }
-
-
-
 
 
 async function displayReport(report, opts) {
@@ -398,7 +395,7 @@ async function displayReport(report, opts) {
       $('#reportDetails tbody').prepend(quickHtml);
     }
     html="";
-    driverStatus.push({driverName:driverName, driverNumber:driver.driverNumber, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
+    driverStatus.push({driverName:driverName, driverAllias:driver.driverAllias, driverNumber:driver.driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
     if(!opts){
       if(totalOnlineDriverPulls){
         saveIndividualDriverStatus(driver).then((res) => {
@@ -607,7 +604,7 @@ async function displayOfflineReport(report, opts) {
       $('#reportDetails tbody').prepend(quickHtml);
     }
     html="";
-    driverStatus.push({driverName:driverName, driverNumber:driver.driverNumber, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
+    driverStatus.push({driverName:driverName, driverAllias:driver.driverAllias, driverNumber:driver.driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
    
     
   } //End of Driver Loop
@@ -675,6 +672,52 @@ async function showDetailedStops(evt){
   stopsDetailed.show();
 }
 
+
+async function sortBy(evt){
+  key = $(evt).attr('data');
+  await clientDeiverStatus.sort((a,b) => a.driverName - b.driverName);
+  console.log(clientDeiverStatus);
+  await displayReportWithClientStauts(clientDeiverStatus);
+  console.log("done"); 
+}
+
+
+async function displayReportWithClientStauts(driverStatus){
+  $('#reportDetails tbody').html("")
+  $('#driverPlaceHolder').removeClass('d-none');
+
+  for await(driver of driverStatus){
+    let html = '<tr class="table-bordered">';
+    html += '<td>'+driver.driverNumber+'</td>';
+
+    let loadNumber = driver.manifest.ofd.length + driver.manifest.attempts.length + driver.manifest.del.length;
+    let progressCalc = Math.trunc(((driver.manifest.del.length + driver.manifest.attempts.length)/loadNumber) * 100);
+    let progress = (isNaN(progressCalc) ? 0 : progressCalc);
+    
+    html += '<td>'+driver.driverName+'</td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="load" onclick="showDetailedStops(this)">'+(loadNumber)+'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="ofd" '+(driver.manifest.ofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ driver.manifest.ofd.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="pofd" '+(driver.manifest.pofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ driver.manifest.pofd.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="del" '+(driver.manifest.del.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ driver.manifest.del.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0 '+(driver.manifest.pattempts.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="attempts" '+((driver.manifest.pattempts.length + driver.manifest.attempts.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (driver.manifest.pattempts.length + driver.manifest.attempts.length) +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0 '+(driver.manifest.pmls.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="mls" '+((driver.manifest.pmls.length + driver.manifest.mls.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (driver.manifest.pmls.length + driver.manifest.mls.length) +'</a></td>';
+    html += '<td> <div class="progress bg-secondary"> <div class="progress-bar '+(progress > 99? "bg-success" : ((progress > 30) ? "bg-warning": "bg-danger"))+'" role="progressbar" style="width: '+progress+'%;"'
+                  +'aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">'+progress+'%</div></div></td>';
+    html += '<td>'+new Date(driver.lastUpdated).toLocaleString()+'</td>';
+    html+="</tr>";
+    let quickHtml = html;
+
+    // if(driverCount >= drivers.length){
+    //   $('#driverPlaceHolder').addClass('d-none');
+    // }
+    if(progress > 99){
+      $('#reportDetails tbody').append(quickHtml);
+    }else{
+      $('#reportDetails tbody').prepend(quickHtml);
+    }
+    html="";
+  }
+}
 
 
 async function showUploadedDrivers(){
