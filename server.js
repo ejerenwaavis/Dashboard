@@ -1553,7 +1553,7 @@ async function convertSingleReport(singleReport,opts) {
         newStop.isPriority = await isPriority(stop.brand);
         // console.log("assigned Ispriority: ", stop.isPriority);
       }
-      console.log("adding stop with a priority: ", newStop.isPriority);
+      // console.log("adding stop with a priority: ", newStop.isPriority);
       driverDocManifest.push(newStop);
     }
     let driverDoc = new DriverReport({
