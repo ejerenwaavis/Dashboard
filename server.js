@@ -356,6 +356,26 @@ const DevDriverReport = reportConn.model("DevDriverReport", devDriverReportSchem
 var devDriverReports;
 
 
+const weeklyReportSchema = new mongoose.Schema({
+    _id: String, // driverNumber-date
+    startDate: {type:Date, default:null},
+    drivers:[{
+        driverNumber: Number,
+        driverName: String,
+        driverAlias: String,
+        monday: Number,
+        tuesday: Number,
+        wednesday: Number,
+        thursday: Number,
+        friday: Number,
+        sarturday: Number,
+        Sunday: Number,
+        
+    }],
+    lastUpdated: {type:Date, default:null},
+});
+const WeeklyReport = reportConn.model("WeeklyReport", weeklyReportSchema);
+var weeklyReport;
 
 
 /***********************BUSINESS LOGIC ************************************/
@@ -783,6 +803,31 @@ app.route(APP_DIRECTORY + "/getDriverFullReport/:driverNumber")
 })
 
 
+app.route(APP_DIRECTORY + "/getDriverWeekReport")
+  .post(async function (req, res) {
+    let driverNumber = Number(req.body.driverNumber);
+    let startDate = new Date(req.body.startDate);
+    let endDate = new Date(req.body.endDate);
+    let errors = [];
+    if(driverNumber){
+      let report = await DriverReport.find({driverNumber:driverNumber,$gte: startDate, $lte: endDate },'-__v');
+      if(report.length){
+        res.send(report);
+      }else{
+        console.log('atempting to find past report in Development DB');
+        report = await DevDriverReport.find({driverNumber:driverNumber,$gte: startDate, $lte: endDate },'-__v');
+        console.log("report from deve db: ", report.length);
+        if(report.length){
+          res.send(report);
+        }else{
+          res.send({err:"Not Found after all avenues", msg:"",driverNumber});
+        }
+      }
+    }else{
+      res.send({err:"Not Found", msg:"",driverNumber});
+    }
+})
+
 app.route(APP_DIRECTORY + "/getTURL")
   .get(function (req, res) {
     // console.error(outputDate() + " Hostname: "+req.hostname);
@@ -821,6 +866,11 @@ app.route(APP_DIRECTORY + "/getDriverName/:driverNumber")
     res.send(driver ? driver : {driverNumber:req.params.driverNumber, name:"** - "+req.params.driverNumber});
 })
 
+
+app.route(APP_DIRECTORY + "/getContractorsList")
+  .get(function (req, res) {
+    res.send(contractors);
+})
 
 
 // app.route(APP_DIRECTORY + "/error")

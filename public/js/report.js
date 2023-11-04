@@ -1081,6 +1081,17 @@ function getDriverName(driverNumber) {
   });
 }
 
+function getContractorsList() {
+  return new Promise((resolve, reject) => {
+    let name = "";
+    $.get(domain + '/getContractorsList/', function(data) {
+      resolve(data.name);
+    }).fail(function(error) {
+      reject(error);
+    });
+  });
+}
+
 function getTrackingURL2() {
   return new Promise((resolve, reject) => {
     $.get(domain + '/getLSURL', function(data) {
@@ -1386,39 +1397,46 @@ function getToday(){
 
 
 /* *********************  WEEKLY REPORT ************************** */
-async function processWeeklyReport(today){
-  $.get(domain + '/getDriverReport/'+dateTime, async function (drivers) {
-    if(drivers.length > 0){
-      console.log('Processing Past Report');
-      console.log(drivers);
-      totalStops = await drivers.reduce((accumulator, driver) => {
-                        return accumulator + driver.manifest.length;
-                      }, 0);
-      let updatedDrivers = await displayReport(drivers, {dateTime:dateTime});
-      drivers = updatedDrivers.drivers;
-      updateLoadStatus("Saving Updates...")
-      let result = {successfull: false, msg:"No need to save on an old report for accuracy reasons"}//await saveDriverStatus(response[0]._id, updatedDrivers);
-      if(result.successfull){
-        $('#lastUpdated').text(' Last Updated: ' + new Date(result.updatedDoc.lastUpdated).toLocaleString());
-        // console.log(result);
-        pullFromServer = false;
-        console.log('Saved Online Copy Successsfully');
-      }else{
-        pullFromServer = false;
-        console.log('Not Saving Online version because report date is behind');
-        // console.log('Failed to save Online version');
-      }
-      $("#pullRequestButton").removeClass("disabled");
-      $("#pullRequestButton").html('Pull Report');
-      $('#sync-warning').addClass("d-none");
-    }else{
-      console.log("No Driver Manifests Report Found at the Moment");
-      $('#sync-warning').text("Hmm.... it looks No Driver Manifests has been submitted to designated email.");
-      $('#sync-warning').removeClass("d-none");
+
+async function processWeeklyReport(date){
+  let weekDates = await getWeekDates(new Date(date));
+  let body = {driverNumber:driverNumber, startDate: weekDates[0], endDate:weekDates[-1]};
+  let contractors = await getContractorsList();
+  for await (const contractor of contractors){
+
+
+    $.post(domain + '/getDriverWeekReport' ,body, async function (report) {
+      if(report.length > 0){
+        console.log('Processing Weekly Report for:', driverName);
+        // console.log(drivers);
+        
+        let driverWeekReport = await displayWeeklyReport(drivers, {dateTime:dateTime});
+        drivers = updatedDrivers.drivers;
+        updateLoadStatus("Saving Updates...")
+        let result = {successfull: false, msg:"No need to save on an old report for accuracy reasons"}//await saveDriverStatus(response[0]._id, updatedDrivers);
+        if(result.successfull){
+          $('#lastUpdated').text(' Last Updated: ' + new Date(result.updatedDoc.lastUpdated).toLocaleString());
+          // console.log(result);
+          pullFromServer = false;
+          console.log('Saved Online Copy Successsfully');
+        }else{
+          pullFromServer = false;
+          console.log('Not Saving Online version because report date is behind');
+          // console.log('Failed to save Online version');
+        }
         $("#pullRequestButton").removeClass("disabled");
-      $("#pullRequestButton").html('Pull Report');
-    }
-  })
+        $("#pullRequestButton").html('Pull Report');
+        $('#sync-warning').addClass("d-none");
+      }else{
+        console.log("No Driver Manifests Report Found at the Moment");
+        $('#sync-warning').text("Hmm.... it looks No Driver Manifests has been submitted to designated email.");
+        $('#sync-warning').removeClass("d-none");
+          $("#pullRequestButton").removeClass("disabled");
+        $("#pullRequestButton").html('Pull Report');
+      }
+      
+    })
+  }
 }
 
 
@@ -1426,7 +1444,7 @@ async function processWeeklyReport(today){
 
 
 
-function getWeekDates(date) {
+async function getWeekDates(date) {
   const weekDates = [];
   const currentDate = new Date(date);
 
