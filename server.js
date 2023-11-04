@@ -328,8 +328,32 @@ const driverReportSchema = new mongoose.Schema({
     }],
     lastUpdated: {type:Date, default:null},
 });
-const DriverReport = reportConn.model("DevDriverReport", driverReportSchema);
+const DriverReport = reportConn.model("DriverReport", driverReportSchema);
 var driverReports;
+
+
+const devDriverReportSchema = new mongoose.Schema({
+    _id: String, // driverNumber-date
+    date: {type:Date, default: new Date().setHours(0,0,0,0)},
+    driverNumber: Number,
+    driverName: String, 
+    driverAllias: String, 
+    manifest:[{
+        brand: String,
+        barcode: String,
+        isPriority: Boolean,
+        lastScan: String,
+        Events: {type:[{}], default:null},
+        name: String,
+        street: String,
+        city: String,
+        state: String,
+        country: String,
+    }],
+    lastUpdated: {type:Date, default:null},
+});
+const DevDriverReport = reportConn.model("DevDriverReport", devDriverReportSchema);
+var devDriverReports;
 
 
 
@@ -646,6 +670,12 @@ app.route(APP_DIRECTORY + "/getDriverReport")
     // yesterday = new Date(today).setDate(3); // Remove before publshing - Fetches the previous days report
     // today = yesterday; // Remove before publshing - Fetches the previous days report
     let report = await DriverReport.find({date:today},'-__v');
+    
+    if(!report.length){
+      console.log("trying DEV Database");
+      report = await DevDriverReport.find({date:today},'-__v');
+    }
+
     if(report.length){
       res.send(report);
     }else{
@@ -700,21 +730,55 @@ app.route(APP_DIRECTORY + "/getDriverReport/:date")
       if(report.length){
         res.send(report);
       }else{
-        console.log('atempting to find past report in single DB');
-        report = await Report.find({_id:date},'-__v');
-        processingResult = await convertSingleReport(report[0],{date:date}); 
-        drivers = processingResult.drivers;
-        errors = [...errors,...processingResult.errors];
-        if(drivers.length > 0){
-            res.send(drivers);
-            if(errors.length)
-            console.error(errors);
-        }else{
-          res.send({error:errors, msg:"Error In Converting"});
+        console.log('atempting to find past report in Development DB');
+        report = await DevDriverReport.find({_id:date},'-__v');
+        console.log("report from deve db: ", report.length);
+        if(!report.length){
+          console.log('atempting to find past report in single DB');
+          report = await Report.find({_id:date},'-__v');
+          if(report.length){
+              processingResult = await convertSingleReport(report[0],{date:date}); 
+              drivers = processingResult.drivers;
+              errors = [...errors,...processingResult.errors];
+              if(drivers.length > 0){
+                res.send(drivers);
+                if(errors.length)
+                console.error(errors);
+            }else{
+              res.send({error:errors, msg:"Error In Converting"});
+            }
+          }else{
+            res.send({error:errors, msg:"Could not fin Old REport"});
+          }
         }
       }
     }else{
       res.send({err:"Not Found", msg:"",param});
+    }
+})
+
+app.route(APP_DIRECTORY + "/getDriverFullReport/:driverNumber")
+  .get(async function (req, res) {
+    let driverNumber = Number(req.params.driverNumber);
+    let errors = [];
+    // console.log(param);
+    // console.log(date);
+    if(driverNumber){
+      let report = await DriverReport.find({driverNumber:driverNumber},'-__v');
+      if(report.length){
+        res.send(report);
+      }else{
+        console.log('atempting to find past report in Development DB');
+        report = await DevDriverReport.find({driverNumber:driverNumber},'-__v');
+        console.log("report from deve db: ", report.length);
+        if(report.length){
+          res.send(report);
+        }else{
+          res.send({err:"Not Found after all avenues", msg:"",driverNumber});
+        }
+      }
+    }else{
+      res.send({err:"Not Found", msg:"",driverNumber});
     }
 })
 

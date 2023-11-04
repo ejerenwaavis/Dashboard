@@ -1285,7 +1285,7 @@ async function isPriority(stop) {
 async function isDelivered(stop) {
   if(stop.Events[0].EventCode === 'DLVD' || stop.Events[0].EventCode === 'FOTO' 
     || (stop.Events[0].EventCode === 'CL' && stop.Events[0].EventShortDescription.includes('Delivered'))
-    || stop.Events[0].Status.includes('Delivered') 
+    || stop.Events[0].Status.includes('Delivered')  // needs edditing check if properties exists
     || stop.Events[0].Status.includes('Miscellaneous') 
     || stop.Events[0].EventShortDescription.includes('Select the camera') 
     || stop.Events[0].EventShortDescription.includes('Delivered.')){
@@ -1381,3 +1381,76 @@ function getToday(){
 
 
 
+
+
+
+
+/* *********************  WEEKLY REPORT ************************** */
+async function processWeeklyReport(today){
+  $.get(domain + '/getDriverReport/'+dateTime, async function (drivers) {
+    if(drivers.length > 0){
+      console.log('Processing Past Report');
+      console.log(drivers);
+      totalStops = await drivers.reduce((accumulator, driver) => {
+                        return accumulator + driver.manifest.length;
+                      }, 0);
+      let updatedDrivers = await displayReport(drivers, {dateTime:dateTime});
+      drivers = updatedDrivers.drivers;
+      updateLoadStatus("Saving Updates...")
+      let result = {successfull: false, msg:"No need to save on an old report for accuracy reasons"}//await saveDriverStatus(response[0]._id, updatedDrivers);
+      if(result.successfull){
+        $('#lastUpdated').text(' Last Updated: ' + new Date(result.updatedDoc.lastUpdated).toLocaleString());
+        // console.log(result);
+        pullFromServer = false;
+        console.log('Saved Online Copy Successsfully');
+      }else{
+        pullFromServer = false;
+        console.log('Not Saving Online version because report date is behind');
+        // console.log('Failed to save Online version');
+      }
+      $("#pullRequestButton").removeClass("disabled");
+      $("#pullRequestButton").html('Pull Report');
+      $('#sync-warning').addClass("d-none");
+    }else{
+      console.log("No Driver Manifests Report Found at the Moment");
+      $('#sync-warning').text("Hmm.... it looks No Driver Manifests has been submitted to designated email.");
+      $('#sync-warning').removeClass("d-none");
+        $("#pullRequestButton").removeClass("disabled");
+      $("#pullRequestButton").html('Pull Report');
+    }
+  })
+}
+
+
+
+
+
+
+function getWeekDates(date) {
+  const weekDates = [];
+  const currentDate = new Date(date);
+
+  // Find the first day (Sunday) of the week for the given date
+  currentDate.setDate(currentDate.getDate() - (currentDate.getDay() +1));
+
+  // Subtract 7 days to go back to the first day of the previous week
+  currentDate.setDate(currentDate.getDate() - 7);
+
+  // Iterate through the days of the week and push them to the weekDates array
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(currentDate);
+    day.setDate(currentDate.getDate() + i);
+    weekDates.push(day);
+  }
+
+  return weekDates;
+}
+
+// // Example usage:
+// const givenDate = new Date('2023-11-02'); // Replace with your desired date
+// const weekDates = getWeekDates(givenDate);
+
+// // Display the dates of the week
+// weekDates.forEach(date => {
+//   console.log(date.toDateString());
+// });
