@@ -176,7 +176,8 @@ async function displayReport(report, opts) {
       reportDateTime = opts['dateTime'];
       console.log("Pulling Infomations for the :"+ new Date(reportDateTime).getDate() + "th");
     }
-  } 
+  }
+  
   let bigHtml="";
   let driverStatus = [];
   let driverCount = 0;
@@ -205,7 +206,7 @@ async function displayReport(report, opts) {
     let attempts = [];
     let pattempts = [];
     let problemStops = [];
-    let html = '<tr class="table-bordered">';
+    let html = '<tr id="'+ driver.driverNumber + '-report" class="table-bordered">';
     html += '<td>'+driver.driverNumber+'</td>';
     let driverName = driver.driverName ?? await getDriverName(driver.driverNumber);
     console.log("Working on _ "+ driverName);
@@ -381,7 +382,7 @@ async function displayReport(report, opts) {
     html += '<td> <a class="btn p-0 m-0 '+(pmls.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="mls" '+((pmls.length + mls.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pmls.length + mls.length) +'</a></td>';
     html += '<td> <div class="progress bg-secondary"> <div class="progress-bar '+(progress > 99? "bg-success" : ((progress > 30) ? "bg-warning": "bg-danger"))+'" role="progressbar" style="width: '+progress+'%;"'
                   +'aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">'+progress+'%</div></div></td>';
-    html += '<td>'+new Date(latestEvent).toLocaleString()+'</td>';
+    html += '<td>'+new Date(latestEvent).toLocaleString()+'<span> <i driverNumber="'+driver.driverNumber+'" onclick="fetchDriverUpdate(this)" class="bi bi-arrow-clockwise"></i> </span></td>';
     html+="</tr>";
     let quickHtml = html;
     bigHtml += html;
@@ -395,7 +396,7 @@ async function displayReport(report, opts) {
       $('#reportDetails tbody').prepend(quickHtml);
     }
     html="";
-    driverStatus.push({driverName:driverName, driverAllias:driver.driverAllias, driverNumber:driver.driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
+    driverStatus.push({ _id:driver._id, driverName:driverName, date:driver.date, driverAllias:driver.driverAllias, driverNumber:driver.driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
     if(!opts){
       if(totalOnlineDriverPulls){
         saveIndividualDriverStatus(driver).then((res) => {
@@ -458,7 +459,7 @@ async function displayOfflineReport(report, opts) {
     let attempts = [];
     let pattempts = [];
     let problemStops = [];
-    let html = '<tr class="table-bordered">';
+    let html = '<tr id="'+driver.driverNumber+'-report" class="table-bordered">';
     html += '<td>'+driver.driverNumber+'</td>';
     let driverName = driver.driverName ?? await getDriverName(driver.driverNumber);
     console.log("Working on _ "+ driverName);
@@ -590,7 +591,7 @@ async function displayOfflineReport(report, opts) {
     html += '<td> <a class="btn p-0 m-0 '+(pmls.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="mls" '+((pmls.length + mls.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pmls.length + mls.length) +'</a></td>';
     html += '<td> <div class="progress bg-secondary"> <div class="progress-bar '+(progress > 99? "bg-success" : ((progress > 30) ? "bg-warning": "bg-danger"))+'" role="progressbar" style="width: '+progress+'%;"'
                   +'aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">'+progress+'%</div></div></td>';
-    html += '<td>'+new Date(latestEvent).toLocaleString()+'</td>';
+    html += '<td>'+new Date(latestEvent).toLocaleString()+'<span> <i driverNumber="'+driver.driverNumber+'" onclick="fetchDriverUpdate(this)" class="bi bi-arrow-clockwise"></i> </span></td>';
     html+="</tr>";
     let quickHtml = html;
     bigHtml += html;
@@ -604,7 +605,7 @@ async function displayOfflineReport(report, opts) {
       $('#reportDetails tbody').prepend(quickHtml);
     }
     html="";
-    driverStatus.push({driverName:driverName, driverAllias:driver.driverAllias, driverNumber:driver.driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
+    driverStatus.push({_id:driver._id, driverName:driverName, date:driver.date, driverAllias:driver.driverAllias, driverNumber:driver.driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
    
     
   } //End of Driver Loop
@@ -674,12 +675,265 @@ async function showDetailedStops(evt){
 
 
 async function sortBy(evt){
-  key = $(evt).attr('data');
-  await clientDeiverStatus.sort((a,b) => a.driverName - b.driverName);
-  console.log(clientDeiverStatus);
+  let key = $(evt).attr('data');
+  switch (key) {
+    case "name":
+      await clientDeiverStatus.sort(function (a,b){
+          if (a.driverName[0] > b.driverName[0]) {
+              return 1;   
+          }else if (a.driverName[0] < b.driverName[0]){
+              return -1;
+          }else{
+              return 0;
+          }
+      });
+      break;
+    case "load":
+      await clientDeiverStatus.sort(function (a,b){
+        if ( (a.manifest.ofd.length + a.manifest.del.length + a.manifest.attempts.length) > (b.manifest.ofd.length + b.manifest.del.length + b.manifest.attempts.length)) {
+            return 1;   
+        }else if ((a.manifest.ofd.length + a.manifest.del.length + a.manifest.attempts.length) < (b.manifest.ofd.length + b.manifest.del.length + b.manifest.attempts.length)){
+            return -1;
+        }else{
+            return 0;
+        }
+      });
+      break;
+    default:
+    await clientDeiverStatus.sort(function (a,b){
+      if ( a.manifest[key].length  > b.manifest[key].length ) {
+          return 1;   
+      }else if (a.manifest[key].length  < b.manifest[key].length ){
+          return -1;
+      }else{
+          return 0;
+      }
+    });
+    break;
+  }
   await displayReportWithClientStauts(clientDeiverStatus);
-  console.log("done"); 
 }
+
+async function fetchDriverUpdate(evt){
+  let driverNumber = Number($(evt).attr('driverNumber'));
+  let driverIndex = clientDeiverStatus.findIndex(d => d.driverNumber === driverNumber);
+  let reportDateTime = null;
+  let totalOnlinePulls = 0;
+  $('#'+driverNumber +'-report').addClass("opacity-25")
+    console.log("diverIndex: ", driverIndex);
+    let ofd = [];
+    let pofd = [];
+    let del = [];
+    let mls = [];
+    let pmls = [];
+    let load = [];
+    let attempts = [];
+    let pattempts = [];
+    let problemStops = [];
+    let html = '<tr id="'+driverNumber+'-report" class="table-bordered">';
+    html += '<td>'+driverNumber+'</td>';
+    let driverName = clientDeiverStatus[driverIndex].driverName ?? await getDriverName(driverNumber);
+    console.log("Working on _ "+ driverName);
+
+    // driver.driverName = driverName;
+    var latestEvent = ((new Date((reportDateTime? reportDateTime :new Date()))).setHours(0,0,0,0));
+    //loop through all OFD'S and update
+    let deliverableStops = [...clientDeiverStatus[driverIndex].manifest.ofd,...clientDeiverStatus[driverIndex].manifest.pofd,
+    ...clientDeiverStatus[driverIndex].manifest.attempts, ...clientDeiverStatus[driverIndex].manifest.pattempts,
+    ...clientDeiverStatus[driverIndex].manifest.mls,...clientDeiverStatus[driverIndex].manifest.pmls]
+    for await(stop of deliverableStops){
+      try {
+        if(stop.Events != 404){
+          if(!stop.Events){
+            console.log("no local events found, puling from external source");
+            let info = await getTrackingnInfo(stop.barcode);
+            if(info != 'ERR_CONNECTION_RESET'){
+              if(reportDateTime){
+                let todaysInfo = await todaysEvents(info, reportDateTime);
+                stop.Events = todaysInfo;
+              }else{
+                stop.Events = info;
+              }
+            }else{
+              stop.Events = 404;
+            }
+            totalOnlinePulls++;
+          }else if((await isDelivered(stop))){
+            console.log("Already Delivered. not puling from external source");
+          }else{
+            let attempted = await isAttempted(stop);
+            // console.log("Old Events Says: Attempted");
+            let oldInfo = stop.Events;
+            let info = await getTrackingnInfo(stop.barcode);
+            if(info != 'ERR_CONNECTION_RESET'){
+              if(reportDateTime){
+                let todaysInfo = await todaysEvents(info, reportDateTime);
+                // console.log(todaysInfo);
+                stop.Events = todaysInfo;
+              }else{
+                stop.Events = info;
+              }
+              if(!(await isDelivered(stop) || await isAttempted(stop))){
+                // console.log("New Events from new pull");
+                // console.log(stop.Events);
+                stop.Events = oldInfo;
+                // console.log("stop is still not delivered, reverting to OLD INfo");
+              }
+            }else{
+              stop.Events = 500;
+            }
+            totalOnlinePulls++;
+            // console.log(stop);
+          }
+        }
+
+        if(stop.Events != 404 && stop.Events != 500){
+          let stopEventTime = (new Date(stop.Events[0].UtcEventDateTime)).getTime()
+          
+          if(stopEventTime > latestEvent){
+            latestEvent = stopEventTime;
+          }
+
+          let delivered = await isDelivered(stop);
+          let attempted = await isAttempted(stop);
+          let isInMLS = await isMLS(stop);
+          let OFD = await isOFD(stop);
+          if(stop.lastScan){ // this makes sure that only pieces that wew scanned are taken into consideration of displaying on delivered or attempts...e.t.c 
+            if(delivered){
+                del.push(stop);
+            }else if(OFD){
+              // console.log(stop);
+                if(stop.isPriority){
+                  pofd.push(stop);
+                }else{
+                  ofd.push(stop);
+                }
+            }else if(attempted){
+                if(stop.isPriority){
+                  pattempts.push(stop);
+                }else{
+                  attempts.push(stop);
+                }
+            }else if(isInMLS){
+                
+                if(stop.isPriority){
+                  pmls.push(stop);
+                }else{
+                  mls.push(stop);
+                }
+            }else{
+              console.log("Cant Process Package: ", stop.barcode);
+              console.log("Cant Process Package: ", stop.Events[0]);
+              problemStops.push(stop);
+            }
+          }else{ //add whaever that doesent have a last scanned on it to MLS and edit the status to show that.
+
+            if(delivered){
+              if(!stop.Events[0].Status.includes("MLS"))
+              stop.Events[0].Status = stop.Events[0].Status + ' | MLS';  
+              
+                if(stop.isPriority){
+                  pmls.push(stop);
+                }else{
+                  mls.push(stop);
+                }
+            }else if(OFD){
+                
+                if(stop.isPriority){
+                  if(!stop.Events[0].Status.includes("MLS"))
+                  stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+                  pmls.push(stop);
+                }else{
+                  if(!stop.Events[0].Status.includes("MLS"))
+                  stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+                  mls.push(stop);
+                }
+            }else if(attempted){
+                  if(!stop.Events[0].Status.includes("MLS"))
+                  stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+                  
+                  if(stop.isPriority){
+                    pmls.push(stop);
+                  }else{
+                    mls.push(stop);
+                  }
+            }else if(isInMLS){
+                if(!stop.Events[0].Status.includes("MLS"))
+                stop.Events[0].Status = stop.Events[0].Status + ' | MLS';
+                if(stop.isPriority){
+                  pmls.push(stop);
+                }else{
+                  mls.push(stop);
+                }
+            }else{
+              console.log("Cant Process Package: "+ stop.barcode);
+              console.log(driverName);
+              console.log(stop.name);
+              console.log(stop.Events[0].EventCode === 'FOTO');
+              problemStops.push(stop);
+            }
+          }
+          code = {EventCode:stop.Events[0].EventCode, EventShortDescription:stop.Events[0].EventShortDescription, 
+                  details:{driver:driverName, stopName:stop.name, barcode:stop.barcode}};
+          
+          eventCodes.some(c => c.EventCode == code.EventCode)? null : eventCodes.push(code);
+        }
+      } catch (error) {
+        console.log("Error Caught?");
+        console.log(error);
+        problemStops.push(stop);
+      }
+    }// end of deliverable stops loop
+    let allManifest = [...deliverableStops, ...clientDeiverStatus[driverIndex].manifest.del]
+    // console.log("manifest after creation");
+    // console.log(allManifest);
+    del = [...del, ...clientDeiverStatus[driverIndex].manifest.del]
+    let loadNumber = ofd.length + del.length + attempts.length;
+    // console.log("DEL: ", del.length);
+    // console.log("OFD: ", ofd.length);
+    // console.log("attempts: ", attempts.length);
+    // console.log("load: ", loadNumber);
+    // console.log("mainfest: ", allManifest.length);
+
+    let progressCalc = Math.trunc(((del.length + attempts.length)/loadNumber) * 100);
+    progress = (isNaN(progressCalc) ? 0 : progressCalc);
+    
+    html += '<td>'+driverName+'</td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driverNumber+'" stopType="load" onclick="showDetailedStops(this)">'+(loadNumber)+'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driverNumber+'" stopType="ofd" '+(ofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ ofd.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driverNumber+'" stopType="pofd" '+(pofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ pofd.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driverNumber+'" stopType="del" '+(del.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ del.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0 '+(pattempts.length ? 'text-danger':'' )+'" driverNumber="'+driverNumber+'" stopType="attempts" '+((pattempts.length + attempts.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pattempts.length + attempts.length) +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0 '+(pmls.length ? 'text-danger':'' )+'" driverNumber="'+driverNumber+'" stopType="mls" '+((pmls.length + mls.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pmls.length + mls.length) +'</a></td>';
+    html += '<td> <div class="progress bg-secondary"> <div class="progress-bar '+(progress > 99? "bg-success" : ((progress > 30) ? "bg-warning": "bg-danger"))+'" role="progressbar" style="width: '+progress+'%;"'
+                  +'aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">'+progress+'%</div></div></td>';
+    html += '<td>'+new Date(latestEvent).toLocaleString()+'<span> <i driverNumber="'+driverNumber+'" onclick="fetchDriverUpdate(this)" class="bi bi-arrow-clockwise"></i> </span></td>';
+    html+="</tr>";
+    let quickHtml = html;
+   
+    await $('#'+driverNumber+'-report').remove();
+    if(progress > 99){
+      $('#reportDetails tbody').append(quickHtml);
+    }else{
+      $('#reportDetails tbody').prepend(quickHtml);
+    }
+    html=""; 
+    
+    clientDeiverStatus[driverIndex] = { _id:clientDeiverStatus[driverIndex]._id, driverName:driverName, date:clientDeiverStatus[driverIndex].date, driverAllias:clientDeiverStatus[driverIndex].driverAllias, driverNumber:driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}};
+    // get the newly updated clientDriverDocument
+    savableDriver = {_id:clientDeiverStatus[driverIndex]._id, driverName:driverName, date:clientDeiverStatus[driverIndex].date, driverAllias:clientDeiverStatus[driverIndex].driverAllias, driverNumber:driverNumber, lastUpdated:latestEvent, manifest:allManifest} // replace the savable manifest, with mongodb friendly manifest
+    console.log(clientDeiverStatus[driverIndex]);
+    console.log(savableDriver);
+      if(totalOnlinePulls > 0){
+        saveIndividualDriverStatus(savableDriver).then((res) => {
+          console.log('Sent Save operation call');
+        });
+      }else{
+        console.log("aint saving shit");
+      }
+  // pullFromServer = false;
+}
+
 
 
 async function displayReportWithClientStauts(driverStatus){
@@ -687,7 +941,7 @@ async function displayReportWithClientStauts(driverStatus){
   $('#driverPlaceHolder').removeClass('d-none');
 
   for await(driver of driverStatus){
-    let html = '<tr class="table-bordered">';
+    let html = '<tr id="'+driver.driverNumber+'-report" class="table-bordered">';;
     html += '<td>'+driver.driverNumber+'</td>';
 
     let loadNumber = driver.manifest.ofd.length + driver.manifest.attempts.length + driver.manifest.del.length;
@@ -703,7 +957,7 @@ async function displayReportWithClientStauts(driverStatus){
     html += '<td> <a class="btn p-0 m-0 '+(driver.manifest.pmls.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="mls" '+((driver.manifest.pmls.length + driver.manifest.mls.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (driver.manifest.pmls.length + driver.manifest.mls.length) +'</a></td>';
     html += '<td> <div class="progress bg-secondary"> <div class="progress-bar '+(progress > 99? "bg-success" : ((progress > 30) ? "bg-warning": "bg-danger"))+'" role="progressbar" style="width: '+progress+'%;"'
                   +'aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">'+progress+'%</div></div></td>';
-    html += '<td>'+new Date(driver.lastUpdated).toLocaleString()+'</td>';
+    html += '<td>'+new Date(driver.lastUpdated).toLocaleString()+'<span> <i driverNumber="'+driver.driverNumber+'" onclick="fetchDriverUpdate(this)" class="bi bi-arrow-clockwise"></i> </span></td>';
     html+="</tr>";
     let quickHtml = html;
 
@@ -734,7 +988,7 @@ async function showUploadedDrivers(){
 
   
   for await (const name of driverNames){
-    let html = '<tr class="table-bordered">';
+    let html = '<tr id="'+driverNumber+'-report" class="table-bordered">';
     let barcodeColor = "link-secondary";  
     html += '<td colspan="10"> '+ name +'</td>';
     html+="</tr>";
@@ -748,6 +1002,7 @@ async function showUploadedDrivers(){
   })
   stopsDetailed.show();
 }
+
 
 
 
@@ -1118,6 +1373,10 @@ async function todaysEvents(events, dateTime){
   return finalEvents;
 }
 
+
+function getToday(){
+  return (new Date()).setHours(0,0,0,0);
+}
 
 
 

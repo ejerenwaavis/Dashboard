@@ -643,6 +643,8 @@ app.route(APP_DIRECTORY + "/getDriverReport")
   .get(async function (req, res) {
     let errors = [];
     let today = await getToday();
+    // yesterday = new Date(today).setDate(3); // Remove before publshing - Fetches the previous days report
+    // today = yesterday; // Remove before publshing - Fetches the previous days report
     let report = await DriverReport.find({date:today},'-__v');
     if(report.length){
       res.send(report);
