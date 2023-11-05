@@ -476,19 +476,20 @@ async function displayOfflineReport(report, opts) {
         break;
       }
       // console.log((count++)+'/'+driver.manifest.length);
-
-      
+      console.log(stop.Events);
+      console.log(stop.Events);
+      // if(){
         if(stop.lastScan){
           // let stopEventTime = (new Date(stop.Events[0].UtcEventDateTime)).getTime()
           
           // if(stopEventTime > latestEvent){
           //   latestEvent = stopEventTime;
           // }
-
-          let delivered = stop.Events? await isDelivered(stop) : (stop.lastScan === "Delivered");
-          let attempted = stop.Events? await isAttempted(stop) : (stop.lastScan === "Attempted");
-          let isInMLS = stop.Events? await isMLS(stop) : (stop.lastScan === "");
-          let OFD = stop.Events? await isOFD(stop) : (stop.lastScan === "Loaded");
+          // console.log(stop);
+          let delivered = (stop.Events && stop.Events[0] != 404)? await isDelivered(stop) : (stop.lastScan === "Delivered");
+          let attempted = (stop.Events && stop.Events[0] != 404)? await isAttempted(stop) : (stop.lastScan === "Attempted");
+          let isInMLS = (stop.Events && stop.Events[0] != 404)? await isMLS(stop) : (stop.lastScan === "");
+          let OFD = (stop.Events && stop.Events[0] != 404)? await isOFD(stop) : (stop.lastScan === "Loaded");
           if(stop.lastScan){ // this makes sure that only pieces that wew scanned are taken into consideration of displaying on delivered or attempts...e.t.c 
             if(delivered){
                 del.push(stop);
@@ -575,6 +576,9 @@ async function displayOfflineReport(report, opts) {
               }
             }
         }
+      // }else{
+        // console.log('problemStop Encountered', stop);
+      // }
     
     } // End of Manifest Loop
 
