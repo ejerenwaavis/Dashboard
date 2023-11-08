@@ -4,6 +4,7 @@ let trackingResource2 = "";
 let priorityBrands = null;
 let drivers = [];
 let clientDeiverStatus = [];
+let clientWeeklyStatus = [];
 let totalStops = 0;
 let stopCount = 0;
 let totalOnlinePulls = 0;
@@ -482,8 +483,8 @@ async function displayOfflineReport(report, opts) {
         break;
       }
       // console.log((count++)+'/'+driver.manifest.length);
-      console.log(stop.Events);
-      console.log(stop.Events);
+      // console.log(stop.Events);
+      // console.log(stop.Events);
       // if(){
         if(stop.lastScan){
           // let stopEventTime = (new Date(stop.Events[0].UtcEventDateTime)).getTime()
@@ -724,6 +725,49 @@ async function sortBy(evt){
   }
   await displayReportWithClientStauts(clientDeiverStatus);
 }
+
+
+
+async function sortWeeeklyBy(evt){
+  let key = $(evt).attr('data');
+  switch (key) {
+    case "name":
+      await clientWeeklyStatus.sort(function (a,b){
+          if (a.driverName[0] > b.driverName[0]) {
+              return 1;   
+          }else if (a.driverName[0] < b.driverName[0]){
+              return -1;
+          }else{
+              return 0;
+          }
+      });
+      break;
+    case "total":
+      await clientWeeklyStatus.sort(function (a,b){
+        if ( (a.total) > (b.total)) {
+            return 1;   
+        }else if ((a.total) < (b.total)){
+            return -1;
+        }else{
+            return 0;
+        }
+      });
+      break;
+    default:
+    await clientWeeklyStatus.sort(function (a,b){
+      if ( a[key].length  > b[key].length ) {
+          return 1;   
+      }else if (a[key].length  < b[key].length ){
+          return -1;
+      }else{
+          return 0;
+      }
+    });
+    break;
+  }
+  await displayWeeklyReportWithClientStauts(clientWeeklyStatus);
+}
+
 
 async function fetchDriverUpdate(evt){
   let driverNumber = Number($(evt).attr('driverNumber'));
@@ -989,6 +1033,9 @@ async function displayReportWithClientStauts(driverStatus){
 }
 
 
+
+
+
 async function showUploadedDrivers(){
   $('#detailModalTable thead').hide();
   $('#detailModalTable tbody').html("");
@@ -1174,7 +1221,7 @@ async function saveIndividualDriverStatus(driver) {
     })
 }
 
- function stopOullingProcess() {
+ function stopPullingProcess() {
   stopReportPull = true;
  }
 
@@ -1193,6 +1240,10 @@ function processManifests() {
 
 function updateLoadStatus(status) {
   $("#report-process-status").text(''+ status + '');
+}
+
+function updateWeeklyLoadStatus(status) {
+  $("#weekly-report-process-status").text(''+ status + '');
 }
 
 
@@ -1488,10 +1539,211 @@ async function processWeeklyReport(date){
 }
 
 
+async function pullWeeklyReport() {
+  stopReportPull = false;
+  $("#pullWeeklyButton").addClass("disabled");
+  $("#pullWeeklyButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="weekly-report-process-status" role="status">Loading...</span></span>');
+  let selectedWeekDate = $('#weekSelect').val();
+  let date = new Date(selectedWeekDate).getTime();
+  console.log(date);
+  console.log("getWeeklyReport/", date);
+  $.get(domain + '/getWeeklyReport/'+date, async function (report) {
+    console.log(report);
+    if(report.drivers.length > 0){
+      console.log('Processing Weekly Report');
+      console.log(report);
+      totalDrivers = await report.drivers.length;
+      let result = await displayWeeklyReport(report);
+      $("#pullWeeklyButton").removeClass("disabled");
+      $("#pullWeeklyButton").html('Pull Weekly Report');
+      $('#sync-warning').addClass("d-none");
+    }else{
+      console.log("No Weekly Report Found at the Moment");
+      $('#weeklyReportMsg').text("Hmm.... it looks No Weekly report has been compiled.");
+      $('#weeklyReportMsg').removeClass("d-none");
+        $("#pullWeeklyButton").removeClass("disabled");
+      $("#pullWeeklyButton").html('Pull Report');
+    }
+  })
+}
+
+
 //display Weekly REport from database
 async function displayWeeklyReport(wr){
+    driverCount = 0;
+    clientWeeklyStatus = [];
+    $('#weeklyReportDetails tbody').html('');
+    for await (const driver of wr.drivers){
+      driverCount ++;
+      updateWeeklyLoadStatus(Math.trunc((driverCount/wr.drivers.length)/100));
+      let totalDelivered = 0;
+      
+      let textWarningColor = 'text-secondary'
+      let html = "<tr class='table-bordered'>";
+      
+      html += '<td>'+driver.driverNumber+'</td>';
+      html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverName+'" >'+ driver.driverName +'</a></td>';
+      
+      targetDate = await getDateOfSpecificDay(wr.startDate, 6);
+      console.log("Sat - day 6", targetDate);
+      totalDelivered += driver.saturday.delivered;
+      alliasLower = (driver.saturday.driverAllias ? driver.saturday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "":textWarningColor)+'" reportDay="saturday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.saturday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.saturday.delivered +'</a></td>';
 
+      targetDate = await getDateOfSpecificDay(wr.startDate, 0);
+      console.log("Sun - day 0", targetDate);
+      totalDelivered += driver.sunday.delivered;
+      alliasLower = (driver.sunday.driverAllias ? driver.sunday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "":textWarningColor)+'" reportDay="sunday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.sunday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.sunday.delivered +'</a></td>';
+
+      targetDate = await getDateOfSpecificDay(wr.startDate, 1);
+      console.log("mon - day 1", targetDate);
+      totalDelivered += driver.monday.delivered;
+      alliasLower = (driver.monday.driverAllias ? driver.monday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "":textWarningColor)+'" reportDay="monday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.monday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.monday.delivered +'</a></td>';
+
+      targetDate = await getDateOfSpecificDay(wr.startDate, 2);
+      console.log("tue - day 2", targetDate);
+      totalDelivered += driver.tuesday.delivered;
+      alliasLower = (driver.tuesday.driverAllias ? driver.tuesday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "":textWarningColor)+'" reportDay="saturday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.tuesday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.tuesday.delivered +'</a></td>';
+
+      targetDate = await getDateOfSpecificDay(wr.startDate, 3);
+      console.log("wed - day 3", targetDate);
+      totalDelivered += driver.wednesday.delivered;
+      alliasLower = (driver.wednesday.driverAllias ? driver.wedenesday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "":textWarningColor)+'" reportDay="saturday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.wednesday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.wednesday.delivered +'</a></td>';
+
+      targetDate = await getDateOfSpecificDay(wr.startDate, 4);
+      console.log("thu - day 4", targetDate);
+      totalDelivered += driver.thursday.delivered;
+      alliasLower = (driver.thursday.driverAllias ? driver.thursday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "":textWarningColor)+'" reportDay="saturday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.thursday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.thursday.delivered +'</a></td>';
+
+      targetDate = await getDateOfSpecificDay(wr.startDate, 5);
+      console.log("fri - day 5", targetDate);
+      totalDelivered += driver.friday.delivered;
+      alliasLower = (driver.friday.driverAllias ? driver.friday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "": textWarningColor)+'" reportDay="saturday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.friday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.friday.delivered +'</a></td>';
+
+
+      html += '<td>'+totalDelivered+'</td>';
+      html+="</tr>";
+     
+      if(driverCount >= wr.drivers.length){
+        $('#weeklyReportDriverPlaceHolder').addClass('d-none');
+      }
+      $('#weeklyReportDetails tbody').append(html);
+      html="";
+      // let newDriver = driver;
+      driver['total'] = totalDelivered;
+      driver['startDate'] = wr.startDate;
+      clientWeeklyStatus.push(driver);
+    }
 }
+
+
+async function displayWeeklyReportWithClientStauts(driverStatus){
+  $('#weeklyReportDetails tbody').html("")
+  $('#weeklyReportDriverPlaceHolder').removeClass('d-none');
+
+  for await (const driver of driverStatus){
+    // driverCount ++;
+    // updateWeeklyLoadStatus(Math.trunc((driverCount/wr.drivers.length)/100));
+      let totalDelivered = 0;
+      
+      let textWarningColor = 'text-secondary'
+      let html = "<tr class='table-bordered'>";
+      
+      html += '<td>'+driver.driverNumber+'</td>';
+      html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverName+'" >'+ driver.driverName +'</a></td>';
+      
+      targetDate = await getDateOfSpecificDay(driver.startDate, 6);
+      console.log("Sat - day 6", targetDate);
+      totalDelivered += driver.saturday.delivered;
+      alliasLower = (driver.saturday.driverAllias ? driver.saturday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "":textWarningColor)+'" reportDay="saturday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.saturday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.saturday.delivered +'</a></td>';
+
+      targetDate = await getDateOfSpecificDay(driver.startDate, 0);
+      console.log("Sun - day 0", targetDate);
+      totalDelivered += driver.sunday.delivered;
+      alliasLower = (driver.sunday.driverAllias ? driver.sunday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "":textWarningColor)+'" reportDay="sunday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.sunday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.sunday.delivered +'</a></td>';
+
+      targetDate = await getDateOfSpecificDay(driver.startDate, 1);
+      console.log("mon - day 1", targetDate);
+      totalDelivered += driver.monday.delivered;
+      alliasLower = (driver.monday.driverAllias ? driver.monday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "":textWarningColor)+'" reportDay="monday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.monday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.monday.delivered +'</a></td>';
+
+      targetDate = await getDateOfSpecificDay(driver.startDate, 2);
+      console.log("tue - day 2", targetDate);
+      totalDelivered += driver.tuesday.delivered;
+      alliasLower = (driver.tuesday.driverAllias ? driver.tuesday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "":textWarningColor)+'" reportDay="saturday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.tuesday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.tuesday.delivered +'</a></td>';
+
+      targetDate = await getDateOfSpecificDay(driver.startDate, 3);
+      console.log("wed - day 3", targetDate);
+      totalDelivered += driver.wednesday.delivered;
+      alliasLower = (driver.wednesday.driverAllias ? driver.wedenesday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "":textWarningColor)+'" reportDay="saturday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.wednesday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.wednesday.delivered +'</a></td>';
+
+      targetDate = await getDateOfSpecificDay(driver.startDate, 4);
+      console.log("thu - day 4", targetDate);
+      totalDelivered += driver.thursday.delivered;
+      alliasLower = (driver.thursday.driverAllias ? driver.thursday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "":textWarningColor)+'" reportDay="saturday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.thursday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.thursday.delivered +'</a></td>';
+
+      targetDate = await getDateOfSpecificDay(driver.startDate, 5);
+      console.log("fri - day 5", targetDate);
+      totalDelivered += driver.friday.delivered;
+      alliasLower = (driver.friday.driverAllias ? driver.friday.driverAllias.toLowerCase() : "").split(" ");
+      driverNameLower = driver.driverName.toLowerCase().split(" ");
+      alliasMatch = driverNameLower.some(item => alliasLower.includes(item));
+      html += '<td> <a class="btn p-0 m-0 '+(alliasMatch ? "": textWarningColor)+'" reportDay="saturday" driverNumber="'+driver.driverName+'"  reportDate="'+targetDate+'" '+(driver.friday.delivered ? ' onclick="showDelieveredStops(this)"' : '')+ '>'+ driver.friday.delivered +'</a></td>';
+
+
+      html += '<td>'+totalDelivered+'</td>';
+      html+="</tr>";
+     
+      // if(driverCount >= wr.drivers.length){
+      //   $('#weeklyReportDriverPlaceHolder').addClass('d-none');
+      // }
+      $('#weeklyReportDetails tbody').append(html);
+      html="";
+      // let newDriver = driver;
+      // driver['total'] = totalDelivered;
+      // clientWeeklyStatus.push(driver);
+    }
+}
+
+
 
 
 //updateWeekelyReport() saves the days finalized delivered# to an already existing WR or creates one if other.
@@ -1526,6 +1778,7 @@ async function updateWeeklyReport(){
 }
 
 
+
 async function getWeekDates(randomDate) {
   let date = randomDate ?? new Date();
   const weekDates = [];
@@ -1555,6 +1808,17 @@ async function getWeekDates(randomDate) {
 async function prepareWeeklyReportInterface(){
   $("#weeklyReportMsg").show();
   await setAvailableWeeks();
+  await stagePulling();
+}
+
+
+async function getDateOfSpecificDay(startDate, dayOfWeek) {
+  const today = new Date(new Date(startDate).getTime());
+  const currentDayOfWeek = today.getDay(); // 0 for Sunday, 1 for Monday, and so on.
+  const daysUntilTargetDay = (dayOfWeek - currentDayOfWeek + 7) % 7;
+
+  today.setDate(today.getDate() + daysUntilTargetDay);
+  return today;
 }
 
 
@@ -1562,15 +1826,19 @@ async function prepareWeeklyReportInterface(){
 async function setAvailableWeeks(){
     $.get(domain + '/getWeeklyReportRanges', async function (reportDates) {
       if(reportDates.length){
+        $("#weekSelect").html('');
         for (const reportRange of reportDates){
-          $("#weekSelect").html('');
-          $("#weekSelect").append('<option id="' + reportRange._id + '">'+ reportRange._id +'</option>');
+          $("#weekSelect").append('<option date="' + reportRange._id + '" id="' + reportRange._id + ' onclick="stagePulling(this)">'+ new Date(reportRange._id).toLocaleString() +'</option>');
         }
       }else{
         console.log("no WeeklyReports found at the moment");
         $("#weeklyReportMsg").text("Hmmm...No Report avialable at the moment")
       }
     })
+}
+
+async function stagePulling(evt){
+  $("#pullWeeklyButton").removeClass("disabled");
 }
 
 const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];

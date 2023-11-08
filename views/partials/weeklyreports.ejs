@@ -4,16 +4,16 @@
             <div class="">
                 <h6 class="placard-title fw-bold text-mute col d-inline">Weekly Report</h6>
                 
-                <h6 id="weeklyLastUpdated" class="placard-title text-mute col d-inline"></h6>
-                <select id="weekSelect" class="form-select form-select-sm" aria-label="Small select example">
+                <!-- <h6 id="weeklyLastUpdated" class="placard-title text-mute col d-inline"></h6> -->
+                <select id="weekSelect" class="form-select form-select-sm d-block mb-1" aria-label="Small select example">
                     <option selected>Select A Week</option>
                 </select>
             </div>
             
             <div  class="py-2 btn-group" role="group" >
                 
-                <button onclick="pullReport()" id="pullWeeklyButton" class="btn btn-sm btn-secondary disabled">Pull weekly Reports</button>
-                <button type="button" onclick="stopweeklyPullingProcess()" class="btn btn-sm btn-outline-secondary"> X </button>
+                <button onclick="pullWeeklyReport()" id="pullWeeklyButton" class="btn btn-sm btn-secondary disabled">Pull weekly Reports</button>
+                <button type="button" onclick="stopPullingProcess()" class="btn btn-sm btn-outline-secondary"> X </button>
             </div>
         </div>
     </div>
@@ -52,8 +52,8 @@
             <table id="weeklyReportDetails" class="table table-hover">
                 <thead>
                     <tr>
-                        <td>IC #</td>
-                        <td>NAME</td>
+                        <td> <span data="driverNumber"> IC# </span></td>
+                        <td> <span data="name" onclick="sortWeeeklyBy(this)"> NAME </span></td>
                         <td>SAT</td>
                         <td>SUN</td>
                         <td>MON</td>
@@ -61,7 +61,7 @@
                         <td>WED</td>
                         <td>THU</td>
                         <td>FRI</td>
-                        <td>TOTAL</td>
+                        <td> <span data="total" onclick="sortWeeeklyBy(this)"> TOTAL </span></td>
                     </tr>
                 </thead>
                 <!-- Data -->

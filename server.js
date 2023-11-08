@@ -820,13 +820,14 @@ app.route(APP_DIRECTORY + "/getDriverFullReport/:driverNumber")
 
 /**** Weekly Reports ****/ 
 
-app.route(APP_DIRECTORY + "/getWeeklyReport/")
+app.route(APP_DIRECTORY + "/getWeeklyReport/:date")
   .get(async function (req, res) {
-      
-    let startDate = await getWeekDates()[0];
+    date = (new Date(Number(req.params.date)));
+    let startDate = (await getWeekDates(date))[0];
+    // console.log(startDate);
     try {
-      let report = await WeeklyReport.find({startDate:startDate},'-__v');
-      if(report.length){
+      let report = await WeeklyReport.findOne({startDate:startDate},'-__v');
+      if(report){
         res.send(report);
       }else{
         console.log('Could find the report');
