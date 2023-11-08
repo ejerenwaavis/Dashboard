@@ -918,7 +918,7 @@ async function fetchDriverUpdate(evt){
       $('#reportDetails tbody').prepend(quickHtml);
     }
     html=""; 
-    
+     
     clientDeiverStatus[driverIndex] = { _id:clientDeiverStatus[driverIndex]._id, driverName:driverName, date:clientDeiverStatus[driverIndex].date, driverAllias:clientDeiverStatus[driverIndex].driverAllias, driverNumber:driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}};
     // get the newly updated clientDriverDocument
     savableDriver = {_id:clientDeiverStatus[driverIndex]._id, driverName:driverName, date:clientDeiverStatus[driverIndex].date, driverAllias:clientDeiverStatus[driverIndex].driverAllias, driverNumber:driverNumber, lastUpdated:latestEvent, manifest:allManifest} // replace the savable manifest, with mongodb friendly manifest
