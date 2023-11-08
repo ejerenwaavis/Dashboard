@@ -5,9 +5,9 @@
                 <h6 class="placard-title fw-bold text-mute col d-inline">Weekly Report</h6>
                 
                 <h6 id="weeklyLastUpdated" class="placard-title text-mute col d-inline"></h6>
-                <div class="form-check form-switch">
-                    <label class="form-check-label" for="flexSwitchCheckDefault"> 10/14/2023 - 10/20/2023 </label>
-                </div>
+                <select id="weekSelect" class="form-select form-select-sm" aria-label="Small select example">
+                    <option selected>Select A Week</option>
+                </select>
             </div>
             
             <div  class="py-2 btn-group" role="group" >
@@ -66,9 +66,9 @@
                 </thead>
                 <!-- Data -->
                 <tbody>
-                    <td id="sync-warning" class="d-none" colspan="10"><span class="text-danger opacity-75"
-                            style="color: red;">Driver Manifest has not yet been Synchrosnized with the Ontrac Server,
-                            Click "Pull Report" to Sync. [ <a class="link-primary">(<span id="weeklyReportDriverLength" class="" onclick="showUploadedDrivers()"></span>)</a> ]</span></td>
+                    <td id="weeklyReportMsg" class="d-none" colspan="10"><span class="text-danger opacity-75">
+                        No Weekly Report Pulled,
+                        Select a week and click "Pull Report".</td>
                 </tbody>
                 <tfoot id="weeklyReportDriverPlaceHolder" class="d-none border-0">
                     <tr class="placeholder-wave ">

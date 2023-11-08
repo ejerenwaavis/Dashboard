@@ -357,22 +357,34 @@ var devDriverReports;
 
 
 const weeklyReportSchema = new mongoose.Schema({
-    _id: String, // driverNumber-date
+    _id: String, // StartDate-EndDate
     startDate: {type:Date, default:null},
+    endDate: {type:Date, default:null},
     drivers:[{
         driverNumber: Number,
         driverName: String,
-        driverAlias: String,
-        monday: Number,
-        tuesday: Number,
-        wednesday: Number,
-        thursday: Number,
-        friday: Number,
-        sarturday: Number,
-        Sunday: Number,
-        
+        monday: { delivered:{type:Number, default:0},
+                  driverAllias: {type:String, default:""},
+                },
+        tuesday: { delivered:{type:Number, default:0},
+                  driverAllias: {type:String, default:""},
+                },
+        wednesday: { delivered:{type:Number, default:0},
+                  driverAllias: {type:String, default:""},
+                },
+        thursday: { delivered:{type:Number, default:0},
+                  driverAllias: {type:String, default:""},
+                },
+        friday: { delivered:{type:Number, default:0},
+                  driverAllias: {type:String, default:""},
+                },
+        saturday: { delivered:{type:Number, default:0},
+                  driverAllias: {type:String, default:""},
+                },
+        sunday: { delivered:{type:Number, default:0},
+                  driverAllias: {type:String, default:""},
+                },
     }],
-    lastUpdated: {type:Date, default:null},
 });
 const WeeklyReport = reportConn.model("WeeklyReport", weeklyReportSchema);
 var weeklyReport;
@@ -777,6 +789,7 @@ app.route(APP_DIRECTORY + "/getDriverReport/:date")
     }
 })
 
+
 app.route(APP_DIRECTORY + "/getDriverFullReport/:driverNumber")
   .get(async function (req, res) {
     let driverNumber = Number(req.params.driverNumber);
@@ -800,7 +813,49 @@ app.route(APP_DIRECTORY + "/getDriverFullReport/:driverNumber")
     }else{
       res.send({err:"Not Found", msg:"",driverNumber});
     }
-})
+});
+
+
+
+
+/**** Weekly Reports ****/ 
+
+app.route(APP_DIRECTORY + "/getWeeklyReport/")
+  .get(async function (req, res) {
+      
+    let startDate = await getWeekDates()[0];
+    try {
+      let report = await WeeklyReport.find({startDate:startDate},'-__v');
+      if(report.length){
+        res.send(report);
+      }else{
+        console.log('Could find the report');
+        res.send({msg: "No report found"});
+      }      
+    } catch (error) {
+      console.error('Enountered an Error');
+      console.error(error);
+      res.send({msg: "Encountered an error", error:error});
+    }
+});
+
+app.route(APP_DIRECTORY + "/getWeeklyReportRanges/")
+  .get(async function (req, res) {
+      
+    try {
+      let weeklyRanges = await WeeklyReport.find({},'-drivers -__v');
+      if(weeklyRanges.length){
+        res.send(weeklyRanges);
+      }else{
+        console.log('Could find the report');
+        res.send({msg: "No report found"});
+      }      
+    } catch (error) {
+      console.error('Enountered an Error');
+      console.error(error);
+      res.send({msg: "Encountered an error", error:error});
+    }
+});
 
 
 app.route(APP_DIRECTORY + "/getDriverWeekReport")
@@ -814,7 +869,7 @@ app.route(APP_DIRECTORY + "/getDriverWeekReport")
       if(report.length){
         res.send(report);
       }else{
-        console.log('atempting to find past report in Development DB');
+        console.log('attempting to find past report in Development DB');
         report = await DevDriverReport.find({driverNumber:driverNumber,$gte: startDate, $lte: endDate },'-__v');
         console.log("report from deve db: ", report.length);
         if(report.length){
@@ -827,6 +882,100 @@ app.route(APP_DIRECTORY + "/getDriverWeekReport")
       res.send({err:"Not Found", msg:"",driverNumber});
     }
 })
+
+
+app.route(APP_DIRECTORY + "/updateWeeklyReport")
+  .post(async function (req, res) {
+    let errors = [];
+    let drivers = req.body.drivers;
+    // console.log("drivers");
+    // console.log(drivers);
+
+    startDate = new Date(req.body.startDate)
+    endDate = new Date ((await getWeekDates(startDate))[6]);
+    day = req.body.day;
+
+    // console.log("startDate", startDate);
+    // console.log("endDate", endDate);
+    // console.log("day", day);
+    console.log("updating weekly report");
+    
+    wr = await WeeklyReport.findOne({startDate:startDate});
+    // console.log(wr);
+    if(wr){
+      for await (const driver of drivers){
+        driverNumber = Number(driver.driverNumber);
+        // console.log(driver.driverNumber);
+        driverIndex =  wr.drivers.findIndex(d => d.driverNumber === driverNumber);
+        // console.log("Driver Index: ",driverIndex);
+        if(driverIndex != -1){
+          wr.drivers[driverIndex][day].delivered = driver.delivered;
+          wr.drivers[driverIndex][day].driverAllias = driver.driverAllias;
+        }else{
+          wr.drivers.push({
+            driverNumber: driverNumber, 
+            driverName:driver.driverName,
+            [day]:{
+              driverAllias:driver.driverAllias, 
+              delivered:driver.delivered,
+            }
+          });
+        }
+      }
+      try {
+        saveResult = await wr.save()
+        if(saveResult){
+          console.log("Modified Successfully");
+          res.send({msg:"WR Modified Successfully", startDate:startDate, updateDay:day,successfull:true})
+        }else{
+          console.log("Failed to save modified doc");
+          res.send({msg:"Failed to save modified doc", startDate:startDate, updateDay:day,successfull:false})
+        }
+      } catch (error) {
+        console.log("error saving WR after modification");
+        res.send({msg:"error saving WR after modification", startDate:startDate, error:error, updateDay:day, successfull:true})
+      }
+    }else{
+      console.log('wr does not exist, creating a new one');
+      newWR = new WeeklyReport({
+          _id: startDate, // StartDate-EndDate
+          startDate: startDate,
+          endDate: endDate,
+          drivers:[],
+      })
+
+      for await (const driver of drivers){
+        {
+          newWR.drivers.push({
+            driverNumber: Number(driver.driverNumber), 
+            driverName:driver.driverName,
+            [day]:{
+              driverAllias:driver.driverAllias, 
+              delivered:driver.delivered,
+            }
+          });
+        }
+      }
+      try {
+        saveResult = newWR.save()
+        if(saveResult){
+          console.log("WR updated and saved sucessfully");
+          res.send({msg:"WR updated and saved sucessfully", startDate:startDate, updateDay:day,successfull:true})
+        }else{
+          console.log("New WR-doc failed to save");
+          res.send({msg:"New WR-doc failed to save", startDate:startDate, updateDay:day,successfull:false})
+        }
+      } catch (error) {
+        res.send({msg:"error saving WR after modification", startDate:startDate, updateDay:day, error:error, successfull:false})
+        console.log("error saving WR after modification");
+      }
+    }
+
+})
+
+
+
+/******** Getting Resources  ********/ 
 
 app.route(APP_DIRECTORY + "/getTURL")
   .get(function (req, res) {
@@ -1747,7 +1896,29 @@ async function getDriverName(driverNumber){
     return (driver ?  driver.name : "***" + driverNumberStr.substring(3));
 }
 
+async function getWeekDates(randomDate) {
+  let date = randomDate ?? new Date();
+  const weekDates = [];
+  const currentDate = new Date(date);
 
+  // Find the first day (Sunday) of the week for the given date
+  if(currentDate.getDay() !== 6){
+    currentDate.setDate(currentDate.getDate() - (currentDate.getDay() +1));  
+  }
+  
+  // Subtract 7 days to go back to the first day of the previous week
+  // currentDate.setDate(currentDate.getDate() - 7);
+
+
+  // Iterate through the days of the week and push them to the weekDates array
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(currentDate);
+    day.setDate(currentDate.getDate() + i);
+    weekDates.push(day);
+  }
+
+  return weekDates;
+}
 
 const priorityBrands = [
   { trackingPrefixes : [], name : 'Eat Clean To Go'},

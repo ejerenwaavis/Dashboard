@@ -12,6 +12,7 @@ let stopReportPull = false;
 let pullFromServer = false;
 eventCodes.problemStops = [];
 let onloadReport = null;
+let totalOFD = NaN;
 
 window.onload = async (event) => {
   $("#deliveryReport-nav-button").click(); //simulates the show action for the nav tabls
@@ -37,6 +38,7 @@ async function pullReport() {
       totalStops = await drivers.reduce((accumulator, driver) => {
                         return accumulator + driver.manifest.length;
                       }, 0);
+                      setTotalOFD
       let result = await displayReport(drivers);
       drivers = result.drivers;
       updateLoadStatus("Finalizing Updates...")
@@ -178,6 +180,7 @@ async function displayReport(report, opts) {
     }
   }
   
+  totalOFD = 0;
   let bigHtml="";
   let driverStatus = [];
   let driverCount = 0;
@@ -286,6 +289,7 @@ async function displayReport(report, opts) {
             if(delivered){
                 del.push(stop);
             }else if(OFD){
+              totalOFD++;
               // console.log(stop);
                 if(stop.isPriority){
                   pofd.push(stop);
@@ -416,6 +420,7 @@ async function displayReport(report, opts) {
   if(eventCodes.problemStops.length > 0){
     console.log(eventCodes);
   }
+  setTotalOFD(totalOFD);
   console.log(eventCodes);
   return {drivers:drivers, lastUpdated:new Date().toLocaleString()};
 }
@@ -430,7 +435,8 @@ async function displayOfflineReport(report, opts) {
       reportDateTime = opts['dateTime'];
       console.log("Pulling Infomations for the :"+ new Date(reportDateTime).getDate() + "th");
     }
-  } 
+  }
+  totalOFD = 0;
   let bigHtml="";
   let driverStatus = [];
   let driverCount = 0;
@@ -494,6 +500,7 @@ async function displayOfflineReport(report, opts) {
             if(delivered){
                 del.push(stop);
             }else if(OFD){
+                totalOFD ++;
               // console.log(stop);
                 if(stop.isPriority){
                   pofd.push(stop);
@@ -741,6 +748,8 @@ async function fetchDriverUpdate(evt){
 
     // driver.driverName = driverName;
     var latestEvent = ((new Date((reportDateTime? reportDateTime :new Date()))).setHours(0,0,0,0));
+    let driverOFD = clientDeiverStatus[driverIndex].manifest.ofd.length + clientDeiverStatus[driverIndex].manifest.pofd.length
+    totalOFD = totalOFD - driverOFD;
     //loop through all OFD'S and update
     let deliverableStops = [...clientDeiverStatus[driverIndex].manifest.ofd,...clientDeiverStatus[driverIndex].manifest.pofd,
     ...clientDeiverStatus[driverIndex].manifest.attempts, ...clientDeiverStatus[driverIndex].manifest.pattempts,
@@ -807,6 +816,7 @@ async function fetchDriverUpdate(evt){
                 del.push(stop);
             }else if(OFD){
               // console.log(stop);
+              totalOFD ++;
                 if(stop.isPriority){
                   pofd.push(stop);
                 }else{
@@ -928,6 +938,7 @@ async function fetchDriverUpdate(evt){
     savableDriver = {_id:clientDeiverStatus[driverIndex]._id, driverName:driverName, date:clientDeiverStatus[driverIndex].date, driverAllias:clientDeiverStatus[driverIndex].driverAllias, driverNumber:driverNumber, lastUpdated:latestEvent, manifest:allManifest} // replace the savable manifest, with mongodb friendly manifest
     console.log(clientDeiverStatus[driverIndex]);
     console.log(savableDriver);
+    setTotalOFD(totalOFD);
       if(totalOnlinePulls > 0){
         saveIndividualDriverStatus(savableDriver).then((res) => {
           console.log('Sent Save operation call');
@@ -1395,7 +1406,40 @@ function getToday(){
 
 
 
-
+async function setTotalOFD(ofd) {
+  if(ofd > 0){
+    $("#totalOFD").text(ofd);
+  }else if(!stopReportPull){
+    console.log("now will be a good time to log a weekly report");
+    $("#totalOFD").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Updating WR, Please wait...');
+    await updateWeeklyReport().then(function (result) {
+      console.log(result);
+      if(result.successfull){
+        $("#totalOFD").html(result.msg);
+        setTimeout(() => {
+        $("#totalOFD").html(totalOFD);
+        }, 5000);
+      }else{
+        if(result.error){
+          $("#totalOFD").html(result.error);
+        }else{
+          $("#totalOFD").html(result.msg);
+          setTimeout(() => {
+          $("#totalOFD").html(totalOFD);
+          }, 5000);
+        }
+      }
+    }).catch(err => {
+      $("#totalOFD").html();
+          setTimeout(() => {
+          $("#totalOFD").html(totalOFD);
+          }, 5000);
+          console.log(err);
+    });
+  }else{
+    console.log("cant save WR, pull was stopped abrubptley");
+  }
+}
 
 
 
@@ -1404,7 +1448,7 @@ function getToday(){
 
 async function processWeeklyReport(date){
   let weekDates = await getWeekDates(new Date(date));
-  let body = {driverNumber:driverNumber, startDate: weekDates[0], endDate:weekDates[-1]};
+  let body = {driverNumber:driverNumber, startDate: weekDates[0], endDate:weekDates[6]};
   let contractors = await getContractorsList();
   for await (const contractor of contractors){
 
@@ -1444,19 +1488,57 @@ async function processWeeklyReport(date){
 }
 
 
+//display Weekly REport from database
+async function displayWeeklyReport(wr){
+
+}
 
 
+//updateWeekelyReport() saves the days finalized delivered# to an already existing WR or creates one if other.
+async function updateWeeklyReport(){
+  drivers = [];
+  startDate = (await getWeekDates(clientDeiverStatus[0].date))[0];
+  day = dayNames[new Date(clientDeiverStatus[0].date).getDay()];
+  console.log("startDate for update is: ", startDate, " - ", day);
+  for await (const driver of clientDeiverStatus){
+    drivers.push({
+            driverNumber:driver.driverNumber, 
+            driverName:driver.driverName,
+            driverAllias:driver.driverAllias, 
+            delivered:driver.manifest.del.length,
+            date:driver.date,
+          });
+  }
+  if(drivers.length){
+    let response = await $.post(domain + "/updateWeeklyReport", {drivers:drivers, day:day, startDate:startDate});
+    if(response){
+      console.log(response);
+      return response;
+    }else{
+      console.log("potentially failed");
+      console.log(response);
+      return response;
+    }
+  }else{
+    log("driver compiation for WR failed");
+    return({successfull:false, msg: "driver compiation for WR failed"});
+  }
+}
 
 
-async function getWeekDates(date) {
+async function getWeekDates(randomDate) {
+  let date = randomDate ?? new Date();
   const weekDates = [];
   const currentDate = new Date(date);
 
   // Find the first day (Sunday) of the week for the given date
-  currentDate.setDate(currentDate.getDate() - (currentDate.getDay() +1));
-
+  if(currentDate.getDay() !== 6){
+    currentDate.setDate(currentDate.getDate() - (currentDate.getDay() +1));  
+  }
+  
   // Subtract 7 days to go back to the first day of the previous week
-  currentDate.setDate(currentDate.getDate() - 7);
+  // currentDate.setDate(currentDate.getDate() - 7);
+
 
   // Iterate through the days of the week and push them to the weekDates array
   for (let i = 0; i < 7; i++) {
@@ -1468,11 +1550,27 @@ async function getWeekDates(date) {
   return weekDates;
 }
 
-// // Example usage:
-// const givenDate = new Date('2023-11-02'); // Replace with your desired date
-// const weekDates = getWeekDates(givenDate);
 
-// // Display the dates of the week
-// weekDates.forEach(date => {
-//   console.log(date.toDateString());
-// });
+
+async function prepareWeeklyReportInterface(){
+  $("#weeklyReportMsg").show();
+  await setAvailableWeeks();
+}
+
+
+
+async function setAvailableWeeks(){
+    $.get(domain + '/getWeeklyReportRanges', async function (reportDates) {
+      if(reportDates.length){
+        for (const reportRange of reportDates){
+          $("#weekSelect").html('');
+          $("#weekSelect").append('<option id="' + reportRange._id + '">'+ reportRange._id +'</option>');
+        }
+      }else{
+        console.log("no WeeklyReports found at the moment");
+        $("#weeklyReportMsg").text("Hmmm...No Report avialable at the moment")
+      }
+    })
+}
+
+const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
