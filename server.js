@@ -815,6 +815,33 @@ app.route(APP_DIRECTORY + "/getDriverFullReport/:driverNumber")
     }
 });
 
+app.route(APP_DIRECTORY + "/getSingleDriverReport")
+  .post(async function (req, res) {
+    // console.log(req.body);
+    let driverNumber = Number(req.body.driverNumber);
+    let date = new Date(Number(req.body.date));
+    let errors = [];
+    if(driverNumber){
+      let report = await DriverReport.findOne({driverNumber:driverNumber, date:date},'-__v');
+      if(report){
+        res.send(report);
+      }else{
+        console.log('atempting to find past report in Development DB');
+        report = await DevDriverReport.findOne({driverNumber:driverNumber, date:date},'-__v');
+        console.log("report from deve db: ", report.length);
+        if(report){
+          res.send(report);
+        }else{
+          res.send({err:"Not Found after all avenues", msg:"",driverNumber});
+        }
+      }
+    }else{
+      res.send({err:"Not Found", msg:""+driverNumber+" - "+ date});
+    }
+});
+
+
+
 
 
 
