@@ -23,12 +23,14 @@
                     Delivery Report
                 </a>
             </li>
-            <li class="nav-item" data-bs-toggle="tab"  data-bs-target="#weeklyreports-tab" type="button" role="presentation" aria-controls="weeklyreports-tab" aria-selected="false">
+            <% if(user.email === 'sataylor1003@gmail.com' || user.email === 'ejerenwaavis@gmail.com') {%>
+            <li class="nav-item" data-bs-toggle="tab" onclick="prepareWeeklyReportInterface()" data-bs-target="#weeklyreports-tab" type="button" role="presentation" aria-controls="weeklyreports-tab" aria-selected="false">
                 <a class="nav-link" >
                     <i class="fas fa-paste"></i>
                     Weekly Report
                 </a>
             </li>
+            <%}%>
             <li class="nav-item">
                 <a class="nav-link" href="#">
                     <i class="far fa-clipboard"></i>

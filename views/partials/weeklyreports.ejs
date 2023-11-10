@@ -4,16 +4,16 @@
             <div class="">
                 <h6 class="placard-title fw-bold text-mute col d-inline">Weekly Report</h6>
                 
-                <h6 id="weeklyLastUpdated" class="placard-title text-mute col d-inline"></h6>
-                <div class="form-check form-switch">
-                    <label class="form-check-label" for="flexSwitchCheckDefault"> 10/14/2023 - 10/20/2023 </label>
-                </div>
+                <!-- <h6 id="weeklyLastUpdated" class="placard-title text-mute col d-inline"></h6> -->
+                <select id="weekSelect" class="form-select form-select-sm d-block mb-1" aria-label="Small select example">
+                    <option selected>Select A Week</option>
+                </select>
             </div>
             
             <div  class="py-2 btn-group" role="group" >
                 
-                <button onclick="pullReport()" id="pullWeeklyButton" class="btn btn-sm btn-secondary disabled">Pull weekly Reports</button>
-                <button type="button" onclick="stopweeklyPullingProcess()" class="btn btn-sm btn-outline-secondary"> X </button>
+                <button onclick="pullWeeklyReport()" id="pullWeeklyButton" class="btn btn-sm btn-secondary disabled">Pull weekly Reports</button>
+                <button type="button" onclick="stopPullingProcess()" class="btn btn-sm btn-outline-secondary"> X </button>
             </div>
         </div>
     </div>
@@ -52,8 +52,8 @@
             <table id="weeklyReportDetails" class="table table-hover">
                 <thead>
                     <tr>
-                        <td>IC #</td>
-                        <td>NAME</td>
+                        <td> <span data="driverNumber"> IC# </span></td>
+                        <td> <span data="name" onclick="sortWeeeklyBy(this)"> NAME </span></td>
                         <td>SAT</td>
                         <td>SUN</td>
                         <td>MON</td>
@@ -61,14 +61,14 @@
                         <td>WED</td>
                         <td>THU</td>
                         <td>FRI</td>
-                        <td>TOTAL</td>
+                        <td> <span data="total" onclick="sortWeeeklyBy(this)"> TOTAL </span></td>
                     </tr>
                 </thead>
                 <!-- Data -->
                 <tbody>
-                    <td id="sync-warning" class="d-none" colspan="10"><span class="text-danger opacity-75"
-                            style="color: red;">Driver Manifest has not yet been Synchrosnized with the Ontrac Server,
-                            Click "Pull Report" to Sync. [ <a class="link-primary">(<span id="weeklyReportDriverLength" class="" onclick="showUploadedDrivers()"></span>)</a> ]</span></td>
+                    <td id="weeklyReportMsg" class="d-none" colspan="10"><span class="text-danger opacity-75">
+                        No Weekly Report Pulled,
+                        Select a week and click "Pull Report".</td>
                 </tbody>
                 <tfoot id="weeklyReportDriverPlaceHolder" class="d-none border-0">
                     <tr class="placeholder-wave ">
