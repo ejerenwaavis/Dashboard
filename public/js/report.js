@@ -245,7 +245,7 @@ async function displayReport(report, opts) {
             }
             totalOnlinePulls++;
             totalOnlineDriverPulls ++;
-          }else if((await isDelivered(stop))){
+          }else if(stop.lastScan === 'Delivered' || (await isDelivered(stop))){
             console.log("Already Delivered. not puling from external source");
           }else if(pullFromServer){
             let attempted = await isAttempted(stop);
@@ -1432,9 +1432,9 @@ async function isAttempted(stop) {
     || stop.Events[0].EventCode === 'NDMI' 
     || stop.Events[0].EventCode === 'ACSS' 
     || stop.Events[0].EventCode === 'BCLD' 
-    || stop.Events[0].Status.includes('Attempted')
-    || ((stop.Events[0].Status.includes('Pending')
-    || stop.Events[0].EventShortDescription.includes('Delayed. Delivery date updated.') ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
+    || (stop.Events[0].Status ? stop.Events[0].Status.includes('Attempted') : false )
+    || (stop.Events[0].Status ? stop.Events[0].Status.includes('Pending') : false )
+    || (stop.Events[0].EventShortDescription ? stop.Events[0].EventShortDescription.includes('Delayed. Delivery date updated.') : false )){
       return true;
     }else{
       return false;
@@ -1443,7 +1443,9 @@ async function isAttempted(stop) {
 
 
 async function isOFD(stop) {
-  if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription.includes('Out for delivery.')){
+  if(stop.Events[0].EventCode === 'OFDL' 
+  || stop.Events[0].EventCode === 'OD' 
+  || (stop.Events[0].EventShortDescription ? stop.Events[0].EventShortDescription.includes('Out for delivery.') : false )){
     return true;
   }else{
     return false;
@@ -1466,11 +1468,11 @@ async function isMLS(stop) {
     || stop.Events[0].EventCode === 'SFCT' 
     || stop.Events[0].EventCode === 'LOAD'
     || stop.Events[0].EventCode === 'CR'
-    || stop.Events[0].Status.includes('Returned')
-    || stop.Events[0].Status.includes('Undeliverable')
-    || stop.Events[0].EventShortDescription.includes('Packaged received at the facility.') 
-    || stop.Events[0].EventShortDescription.includes('Returned. Contact sender.')
-    || stop.Events[0].EventShortDescription.includes('Damaged. Contact sender.')){
+    || stop.Events[0].Status ? stop.Events[0].Status.includes('Returned') : false
+    || stop.Events[0].Status ? stop.Events[0].Status.includes('Undeliverable') : false
+    || stop.Events[0].EventShortDescription ? stop.Events[0].EventShortDescription.includes('Packaged received at the facility.') : false
+    || stop.Events[0].EventShortDescription ? stop.Events[0].EventShortDescription.includes('Returned. Contact sender.') : false
+    || stop.Events[0].EventShortDescription ? stop.Events[0].EventShortDescription.includes('Damaged. Contact sender.') : false ){
       return true;
     }else{
       return false;
