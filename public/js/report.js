@@ -693,7 +693,7 @@ async function showDetailedStops(evt){
     $('#detailModalTable tbody').append(html);
   }
 
-  $("#detailsHeader").text(stopType.toUpperCase()+ ": "+driverName);
+  $("#detailsHeader").text(stopType.toUpperCase()+ ": "+driverName + " (" + stopArray.length + ")");
   
   const stopsDetailed = new bootstrap.Modal('#detailModal', {
     keyboard: true
@@ -1433,6 +1433,7 @@ async function isAttempted(stop) {
     || stop.Events[0].EventCode === 'ACSS' 
     || stop.Events[0].EventCode === 'BCLD' 
     || stop.Events[0].Status.includes('Attempted')
+    || stop.Events[0].Status.includes('Exception')
     || ((stop.Events[0].Status.includes('Pending')
     || stop.Events[0].EventShortDescription.includes('Delayed. Delivery date updated.') ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
       return true;
