@@ -14,9 +14,19 @@
             </div>
             
             <div  class="py-2 btn-group" role="group" >
-                
                 <button onclick="pullReport()" id="pullRequestButton" class="btn btn-sm btn-secondary disabled">Pull Reports</button>
-                <button type="button" onclick="stopPullingProcess()" class="btn btn-sm btn-outline-secondary"> X </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item btn" onclick="stopPullingProcess()">Stop Report Pull</a></li>
+                    <%if(user.isSuperAdmin){%>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item btn" onclick="updateWeeklyReport()">Update to WR</a></li>
+                    <%}%>
+                </ul>
+                <button type="button" role="button" data-bs-toggle="dropdown" aria-expanded="false" class="btn btn-sm btn-outline-secondary"> 
+                    <span class=""><i class="bi bi-three-dots-vertical"></i></span>
+                </button>
             </div>
         </div>
     </div>

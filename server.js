@@ -204,6 +204,11 @@ passport.use(new GoogleStrategy({
             newUser.email = userProfile.email;
           }
 
+          if(!user.isSuperAdmin && userProfile.isSuperAdmin){
+            // console.error("user has no EMAIL on file");
+            newUser.isSuperAdmin = userProfile.isSuperAdmin;
+          }
+
           // console.error(user);
           // console.error(newUser);
 
@@ -216,7 +221,6 @@ passport.use(new GoogleStrategy({
               return cb(err);
             }
           }else{
-            
               User.findOneAndUpdate({_id:user._id}, newUser, {new:true, upsert:true})
               .then(function(result) {
                 // console.error(result);
@@ -235,29 +239,30 @@ passport.use(new GoogleStrategy({
           if(/^\d+$/.test(userProfile.sub)){
             newID = userProfile.sub;
               console.error("Creating user with a valid _ID");
-            newUser = new User({
-              _id: userProfile.sub,
-              email: userProfile.email,
-              username: userProfile.name,
-              firstName: userProfile.given_name,
-              lastName: userProfile.family_name,
-              verified: false,
-              isProUser: false,
-              photoURL: userProfile.picture
-              });
-            }else{
-              console.error("Creating user w/o _ID");
               newUser = new User({
+                _id: userProfile.sub,
+                email: userProfile.email,
+                username: userProfile.name,
+                firstName: userProfile.given_name,
+                lastName: userProfile.family_name,
+                verified: false,
+                isProUser: false,
+                isSuperAdmin: false,
+                photoURL: userProfile.picture
+              });
+          }else{
+            console.error("Creating user w/o _ID");
+            newUser = new User({
               email: userProfile.name,
               username: userProfile.given_name + " " + userProfile.family_name,
               firstName: userProfile.given_name,
               lastName: userProfile.family_name,
               verified: false,
               isProUser: false,
+              isSuperAdmin: false,
               photoURL: userProfile.picture
-              })
-            }
-
+            })
+          }
 
           newUser.save()
             .then(function() {
@@ -267,7 +272,7 @@ passport.use(new GoogleStrategy({
             .catch(function(err) {
               console.error("failed to create user");
               console.error(err);
-            });
+          });
         }
       } else {
         console.error("Internal error");
@@ -661,14 +666,21 @@ app.route(APP_DIRECTORY + "/saveDriverStatus")
   .post(async function (req, res) {
       //save reuest body object to database
       let driver = req.body.driver;
+      // let oldDriver = await DriverReport.findOne({_id:driver._id}) //Main report flow, uncomment for actual
       let oldDriver = await DriverReport.findOne({_id:driver._id})
+      let errors = [];
 
       if(oldDriver){
         // console.log('found oldDriver Report');
         for await (const stop of driver.manifest){
           if(stop.Events){
             oldStopIndex = oldDriver.manifest.findIndex(os => os.barcode === stop.barcode);
-            oldDriver.manifest[oldStopIndex].Events = stop.Events;
+            if(oldStopIndex != -1){
+              oldDriver.manifest[oldStopIndex].Events = stop.Events;
+            }else{
+              console.log("could not find stop index: driverDoc does not ave stop");
+              errors.push({stop:stop, msg:'does not exist on server', err:"ERR_NOT_FOUND"});
+            }
           }
         }
         try{
@@ -758,7 +770,8 @@ app.route(APP_DIRECTORY + "/getDriverReport/:date")
     // console.log(param);
     // console.log(date);
     if(param){
-      let report = await DriverReport.find({date:date},'-__v');
+      let report = await DriverReport.find({date:date},'-__v'); //this is the origianl report flow. 
+      // let report = await DevDriverReport.find({date:date},'-__v');
       if(report.length){
         res.send(report);
       }else{
@@ -916,16 +929,13 @@ app.route(APP_DIRECTORY + "/updateWeeklyReport")
   .post(async function (req, res) {
     let errors = [];
     let drivers = req.body.drivers;
-    // console.log("drivers");
-    // console.log(drivers);
+    
 
     startDate = new Date(req.body.startDate)
     endDate = new Date ((await getWeekDates(startDate))[6]);
     day = req.body.day;
 
-    // console.log("startDate", startDate);
-    // console.log("endDate", endDate);
-    // console.log("day", day);
+    
     console.log("updating weekly report");
     
     wr = await WeeklyReport.findOne({startDate:startDate});

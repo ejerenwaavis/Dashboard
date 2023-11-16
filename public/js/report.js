@@ -1454,7 +1454,8 @@ async function isOFD(stop) {
 
 async function isMLS(stop) {
   if(stop.Events[0].EventCode === 'RD' 
-    || stop.Events[0].EventCode === 'UD' 
+    || stop.Events[0].EventCode === 'UD'
+    || stop.lastScan === ""
     || stop.Events[0].EventCode === 'ONHD'
     || stop.Events[0].EventCode === 'LOST'
     || stop.Events[0].EventCode === 'HW'
@@ -1496,8 +1497,7 @@ async function todaysEvents(events, dateTime){
   let finalEvents = [];
   let today = (new Date(dateTime)).setHours(28,0,0,0);
   // let date = today.getDate();
-  let reversedEvents = [...events].reverse();
-  for await(event of reversedEvents){
+  for await(event of events){
     eventDate = new Date(event.UtcEventDateTime).setHours(0,0,0,0);
     // console.log("eventDate ", eventDate, " -- today: ", today );
     if(eventDate <= today){
@@ -1857,13 +1857,14 @@ async function updateWeeklyReport(){
   console.log("startDate for update is: ", startDate, " - ", day);
   for await (const driver of clientDeiverStatus){
     drivers.push({
-            driverNumber:driver.driverNumber, 
-            driverName:driver.driverName,
-            driverAllias:driver.driverAllias, 
-            delivered:driver.manifest.del.length,
-            date:driver.date,
-          });
+      driverNumber:driver.driverNumber, 
+      driverName:driver.driverName,
+      driverAllias:driver.driverAllias, 
+      delivered:driver.manifest.del.length,
+      date:driver.date,
+    });
   }
+  
   if(drivers.length){
     let response = await $.post(domain + "/updateWeeklyReport", {drivers:drivers, day:day, startDate:startDate});
     if(response){
