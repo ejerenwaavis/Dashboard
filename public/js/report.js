@@ -245,7 +245,7 @@ async function displayReport(report, opts) {
             }
             totalOnlinePulls++;
             totalOnlineDriverPulls ++;
-          }else if((await isDelivered(stop))){
+          }else if(stop.lastScan === 'Delivered' || (await isDelivered(stop))){
             console.log("Already Delivered. not puling from external source");
           }else if(pullFromServer){
             let attempted = await isAttempted(stop);
@@ -1432,10 +1432,9 @@ async function isAttempted(stop) {
     || stop.Events[0].EventCode === 'NDMI' 
     || stop.Events[0].EventCode === 'ACSS' 
     || stop.Events[0].EventCode === 'BCLD' 
-    || stop.Events[0].Status.includes('Attempted')
-    || stop.Events[0].Status.includes('Exception')
-    || ((stop.Events[0].Status.includes('Pending')
-    || stop.Events[0].EventShortDescription.includes('Delayed. Delivery date updated.') ) && (! mslEvents.includes(stop.Events[0].EventCode)))){
+    || (stop.Events[0].Status ? stop.Events[0].Status.includes('Attempted') : false )
+    || (stop.Events[0].Status ? stop.Events[0].Status.includes('Pending') : false )
+    || (stop.Events[0].EventShortDescription ? stop.Events[0].EventShortDescription.includes('Delayed. Delivery date updated.') : false )){
       return true;
     }else{
       return false;
@@ -1444,7 +1443,9 @@ async function isAttempted(stop) {
 
 
 async function isOFD(stop) {
-  if(stop.Events[0].EventCode === 'OFDL' || stop.Events[0].EventCode === 'OD' || stop.Events[0].EventShortDescription.includes('Out for delivery.')){
+  if(stop.Events[0].EventCode === 'OFDL' 
+  || stop.Events[0].EventCode === 'OD' 
+  || (stop.Events[0].EventShortDescription ? stop.Events[0].EventShortDescription.includes('Out for delivery.') : false )){
     return true;
   }else{
     return false;
@@ -1453,7 +1454,8 @@ async function isOFD(stop) {
 
 async function isMLS(stop) {
   if(stop.Events[0].EventCode === 'RD' 
-    || stop.Events[0].EventCode === 'UD' 
+    || stop.Events[0].EventCode === 'UD'
+    || stop.lastScan === ''
     || stop.Events[0].EventCode === 'ONHD'
     || stop.Events[0].EventCode === 'LOST'
     || stop.Events[0].EventCode === 'HW'
@@ -1467,11 +1469,11 @@ async function isMLS(stop) {
     || stop.Events[0].EventCode === 'SFCT' 
     || stop.Events[0].EventCode === 'LOAD'
     || stop.Events[0].EventCode === 'CR'
-    || stop.Events[0].Status.includes('Returned')
-    || stop.Events[0].Status.includes('Undeliverable')
-    || stop.Events[0].EventShortDescription.includes('Packaged received at the facility.') 
-    || stop.Events[0].EventShortDescription.includes('Returned. Contact sender.')
-    || stop.Events[0].EventShortDescription.includes('Damaged. Contact sender.')){
+    || stop.Events[0].Status ? stop.Events[0].Status.includes('Returned') : false
+    || stop.Events[0].Status ? stop.Events[0].Status.includes('Undeliverable') : false
+    || stop.Events[0].EventShortDescription ? stop.Events[0].EventShortDescription.includes('Packaged received at the facility.') : false
+    || stop.Events[0].EventShortDescription ? stop.Events[0].EventShortDescription.includes('Returned. Contact sender.') : false
+    || stop.Events[0].EventShortDescription ? stop.Events[0].EventShortDescription.includes('Damaged. Contact sender.') : false ){
       return true;
     }else{
       return false;
@@ -1495,8 +1497,7 @@ async function todaysEvents(events, dateTime){
   let finalEvents = [];
   let today = (new Date(dateTime)).setHours(28,0,0,0);
   // let date = today.getDate();
-  let reversedEvents = [...events].reverse();
-  for await(event of reversedEvents){
+  for await(event of events){
     eventDate = new Date(event.UtcEventDateTime).setHours(0,0,0,0);
     // console.log("eventDate ", eventDate, " -- today: ", today );
     if(eventDate <= today){
@@ -1856,13 +1857,14 @@ async function updateWeeklyReport(){
   console.log("startDate for update is: ", startDate, " - ", day);
   for await (const driver of clientDeiverStatus){
     drivers.push({
-            driverNumber:driver.driverNumber, 
-            driverName:driver.driverName,
-            driverAllias:driver.driverAllias, 
-            delivered:driver.manifest.del.length,
-            date:driver.date,
-          });
+      driverNumber:driver.driverNumber, 
+      driverName:driver.driverName,
+      driverAllias:driver.driverAllias, 
+      delivered:driver.manifest.del.length,
+      date:driver.date,
+    });
   }
+
   if(drivers.length){
     let response = await $.post(domain + "/updateWeeklyReport", {drivers:drivers, day:day, startDate:startDate});
     if(response){

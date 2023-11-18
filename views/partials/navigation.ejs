@@ -23,7 +23,7 @@
                     Delivery Report
                 </a>
             </li>
-            <% if(user.email === 'sataylor1003@gmail.com' || user.email === 'ejerenwaavis@gmail.com') {%>
+            <% if(user.isSuperAdmin) {%>
             <li class="nav-item" data-bs-toggle="tab" onclick="prepareWeeklyReportInterface()" data-bs-target="#weeklyreports-tab" type="button" role="presentation" aria-controls="weeklyreports-tab" aria-selected="false">
                 <a class="nav-link" >
                     <i class="fas fa-paste"></i>
