@@ -1455,7 +1455,7 @@ async function isOFD(stop) {
 async function isMLS(stop) {
   if(stop.Events[0].EventCode === 'RD' 
     || stop.Events[0].EventCode === 'UD'
-    || stop.lastScan === ""
+    || stop.lastScan === ''
     || stop.Events[0].EventCode === 'ONHD'
     || stop.Events[0].EventCode === 'LOST'
     || stop.Events[0].EventCode === 'HW'
@@ -1864,7 +1864,7 @@ async function updateWeeklyReport(){
       date:driver.date,
     });
   }
-  
+
   if(drivers.length){
     let response = await $.post(domain + "/updateWeeklyReport", {drivers:drivers, day:day, startDate:startDate});
     if(response){
