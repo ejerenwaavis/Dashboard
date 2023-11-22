@@ -1893,6 +1893,8 @@ async function extractMail(){
       console.log(response);
     }
   })
+  $("#pullRequestButton").removeClass("disabled");
+  $("#pullRequestButton").html('Pull Report');
 }
 
 async function getWeekDates(randomDate) {
