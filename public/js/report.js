@@ -1881,7 +1881,19 @@ async function updateWeeklyReport(){
   }
 }
 
-
+async function extractMail(){
+  $("#pullRequestButton").addClass("disabled");
+  $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="report-process-status" role="status">Extracting Mails...</span></span>');
+  await $.get("http://localhost:3055/extract/0", function (response) {
+    if(response?.successfull){
+      console.log("EXTRACTION COMPLETED");
+      console.log(response);
+    }else{
+      console.log("EXTRACTION FAILED");
+      console.log(response);
+    }
+  })
+}
 
 async function getWeekDates(randomDate) {
   let date = randomDate ?? new Date();
