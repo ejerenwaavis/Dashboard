@@ -1884,15 +1884,33 @@ async function updateWeeklyReport(){
 async function extractMail(){
   $("#pullRequestButton").addClass("disabled");
   $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="report-process-status" role="status">Extracting Mails...</span></span>');
-  await $.get("http://localhost:3055/extract/0", function (response) {
-    if(response?.successfull){
-      console.log("EXTRACTION COMPLETED");
-      console.log(response);
-    }else{
-      console.log("EXTRACTION FAILED");
-      console.log(response);
+  try {
+    await $.get("http://localhost:3055/extract/0", function (response) {
+      if(response?.successfull){
+        console.log("EXTRACTION COMPLETED");
+        console.log(response);
+      }else{
+        console.log("EXTRACTION FAILED");
+        console.log(response);
+      }
+    })
+  } catch (error) {
+    console.log("Encountered an Error Extracting mails");
+    console.log(error);
+    console.log(error.status);
+    if(error.status == 0){
+      $("#totalOFD").html("Email Extraction Server isnt running. Try again after starting it.");
+          setTimeout(() => {
+          $("#totalOFD").html(totalOFD);
+      }, 7000);
+    }else if(error.status == 200){
+      $("#totalOFD").html("Email Extraction Completed.");
+          setTimeout(() => {
+          $("#totalOFD").html(totalOFD);
+      }, 7000);
     }
-  })
+    
+  }
   $("#pullRequestButton").removeClass("disabled");
   $("#pullRequestButton").html('Pull Report');
 }
