@@ -854,8 +854,28 @@ app.route(APP_DIRECTORY + "/getSingleDriverReport")
 });
 
 
-
-
+/**** Deleting Reports **********/
+app.route(APP_DIRECTORY + "/deleteDriverReport/:date")
+  .get(async function (req, res) {
+    let param = Number(req.params.date);
+    let date = (new Date(param)).setHours(0,0,0,0);
+    let errors = [];
+    // console.log(param);
+    // console.log(date);
+    if(param){
+      await DriverReport.deleteMany({date:date}, (err,result) => {
+        if (err) {
+          console.error('Error deleting users:', err);
+          res.send({err:err, msg:"Error deleting Reports"});
+        } else {
+          console.log(`Deleted ${result.deletedCount} reports.`);
+          res.send({err:"", msg:'Deleted '+ result.deletedCount+ ' reports.'});
+        }
+      });  
+    }else{
+      res.send({err:"Invalid Argument", msg:"",param});
+    }
+})
 
 
 /**** Weekly Reports ****/ 
