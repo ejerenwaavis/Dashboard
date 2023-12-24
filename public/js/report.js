@@ -693,7 +693,7 @@ async function showDetailedStops(evt){
     $('#detailModalTable tbody').append(html);
   }
 
-  $("#detailsHeader").text(stopType.toUpperCase()+ ": "+driverName + " (" + stopArray.length + ")");
+  $("#detailsHeader").text(stopType.toUpperCase()+ " | " + driverNumber + " | "+driverName + " [" + stopArray.length + "]");
   
   const stopsDetailed = new bootstrap.Modal('#detailModal', {
     keyboard: true

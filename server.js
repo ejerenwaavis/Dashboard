@@ -858,11 +858,17 @@ app.route(APP_DIRECTORY + "/getSingleDriverReport")
 app.route(APP_DIRECTORY + "/deleteDriverReport/:date")
   .get(async function (req, res) {
     let param = Number(req.params.date);
-    let date = (new Date(param)).setHours(0,0,0,0);
+    let date = null;
+    console.log(param);
+    if(param != 0){
+      date = (new Date(param)).setHours(0,0,0,0);
+    }else{
+      date = (new Date()).setHours(0,0,0,0);
+    }
     let errors = [];
     // console.log(param);
     // console.log(date);
-    if(param){
+    if(date){
       await DriverReport.deleteMany({date:date}, (err,result) => {
         if (err) {
           console.error('Error deleting users:', err);
