@@ -14,6 +14,7 @@ let pullFromServer = false;
 eventCodes.problemStops = [];
 let onloadReport = null;
 let totalOFD = NaN;
+let selectedReportDateTime = (new Date().setHours(0,0,0,0));
 
 window.onload = async (event) => {
   $("#deliveryReport-nav-button").click(); //simulates the show action for the nav tabls
@@ -40,7 +41,7 @@ async function pullReport() {
                         return accumulator + driver.manifest.length;
                       }, 0);
                       setTotalOFD
-      let result = await displayReport(drivers);
+      let result = await displayReport(drivers, {updateWeekly:true});
       drivers = result.drivers;
       updateLoadStatus("Finalizing Updates...")
       // let result = await saveDriverStatus(response[0]._id, updatedDrivers);
@@ -58,9 +59,10 @@ async function pullReport() {
       $('#sync-warning').addClass("d-none");
     }else{
       console.log("No Driver Manifests Report Found at the Moment");
+      $('#reportDetails tbody').html("");
       $('#sync-warning').text("Hmm.... it looks No Driver Manifests has been submitted to designated email.");
       $('#sync-warning').removeClass("d-none");
-        $("#pullRequestButton").removeClass("disabled");
+      $("#pullRequestButton").removeClass("disabled");
       $("#pullRequestButton").html('Pull Report');
     }
   })
@@ -73,14 +75,14 @@ async function pullPastReport(dateTime) {
   $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="report-process-status" role="status">Loading...</span></span>');
   // let manifestProcessing = await processManifests();
   // console.log(manifestProcessing);
-  $.get(domain + '/getDriverReport/'+dateTime, async function (drivers) {
+  await $.get(domain + '/getDriverReport/'+dateTime, async function (drivers) {
     if(drivers.length > 0){
       console.log('Processing Past Report');
       console.log(drivers);
       totalStops = await drivers.reduce((accumulator, driver) => {
                         return accumulator + driver.manifest.length;
                       }, 0);
-      let updatedDrivers = await displayReport(drivers, {dateTime:dateTime});
+      let updatedDrivers = await displayReport(drivers, {updateWeekly:false, dateTime:dateTime});
       drivers = updatedDrivers.drivers;
       updateLoadStatus("Saving Updates...")
       let result = {successfull: false, msg:"No need to save on an old report for accuracy reasons"}//await saveDriverStatus(response[0]._id, updatedDrivers);
@@ -95,14 +97,17 @@ async function pullPastReport(dateTime) {
         // console.log('Failed to save Online version');
       }
       $("#pullRequestButton").removeClass("disabled");
+      $("#extractPastReportButton").removeClass("disabled");
       $("#pullRequestButton").html('Pull Report');
       $('#sync-warning').addClass("d-none");
     }else{
       console.log("No Driver Manifests Report Found at the Moment");
+      $('#reportDetails tbody').html("");
       $('#sync-warning').text("Hmm.... it looks No Driver Manifests has been submitted to designated email.");
       $('#sync-warning').removeClass("d-none");
-        $("#pullRequestButton").removeClass("disabled");
+      $("#pullRequestButton").removeClass("disabled");
       $("#pullRequestButton").html('Pull Report');
+      $("#extractPastReportButton").removeClass("disabled");
     }
   })
 }
@@ -123,7 +128,7 @@ async function pullLocalReport() {
                         return accumulator + driver.manifest.length;
                       }, 0);
         // console.log("total Stop Count is: "+ totalStops);
-        let result = await displayReport(drivers);
+        let result = await displayReport(drivers, {updateWeekly:false} );
         drivers = result.drivers;
         
         if(totalOnlinePulls > 0){
@@ -160,9 +165,10 @@ async function pullLocalReport() {
 
     }else{
       console.log("No Driver Manifests Report Found at the Moment");
+      $('#reportDetails tbody').html("");
       $('#sync-warning').text("Hmm.... it looks No Driver Manifests has been submitted to designated email.");
       $('#sync-warning').removeClass("d-none");
-        $("#pullRequestButton").removeClass("disabled");
+      $("#pullRequestButton").removeClass("disabled");
       $("#pullRequestButton").html('Pull Report');
     }
   });
@@ -174,10 +180,15 @@ async function displayReport(report, opts) {
   $('#reportDetails tbody').html("")
   $('#driverPlaceHolder').removeClass('d-none');
   let reportDateTime = null;
+  let updateWeekly = false;
   if(opts){
     if(opts['dateTime']){
       reportDateTime = opts['dateTime'];
       console.log("Pulling Infomations for the :"+ new Date(reportDateTime).getDate() + "th");
+    }
+    if(opts['updateWeekly']){
+      updateWeekly = opts['updateWeekly'];
+      console.log("UpdateWeeklyReport is set to : ",updateWeekly);
     }
   }
   
@@ -437,7 +448,7 @@ async function displayReport(report, opts) {
   if(eventCodes.problemStops.length > 0){
     console.log(eventCodes);
   }
-  setTotalOFD(totalOFD);
+  setTotalOFD(totalOFD, {updateWeekly:updateWeekly});
   console.log(eventCodes);
   return {drivers:drivers, lastUpdated:new Date().toLocaleString()};
 }
@@ -648,7 +659,12 @@ async function displayOfflineReport(report, opts) {
 }
 
 
-
+async function fetchPastReport(){
+  console.log("Final selectedDate: ", new Date(selectedReportDateTime));
+  $("#extractPastReportButton").addClass("disabled");
+  await pullPastReport(selectedReportDateTime);
+  
+}
 
 async function showDetailedStops(evt){
   $('#detailModalTable thead').show();
@@ -699,6 +715,56 @@ async function showDetailedStops(evt){
     keyboard: true
   })
   stopsDetailed.show();
+}
+
+
+
+function showDateModal() {
+    selectedReportDateTime = new Date().setHours(0,0,0,0); //reset the selected reportr date to today
+    const days = getPastDates()//returns an array of the past thirty date object
+    $('.calendar').html("");
+    let i = 0; // max = days.length
+    let today = new Date();
+    // displayMonth(days[i]);
+    let calendarDatesHtml = "";
+    for (const day of days){
+      // console.log("today: ", today.setHours(0,0,0,0), " ; Day: ", day.setHours(0,0,0,0));
+      // console.log('t:', today, 'd', day );
+      // console.log('t-time:', today.getTime(), 'd-time', day.getTime() );
+      if (today.getDate() === day.getDate()){
+        calendarDatesHtml += '<div class="col  text-center" value="' + day.getTime() + '" onclick="selectDate(this)"> <div class="btn dateButton today border-accent-subtle rounded px-2"> ' + day.toDateString() + '</div> </div>';
+      }else{
+        calendarDatesHtml += '<div class="col  text-center" value="' + day.getTime() + '" onclick="selectDate(this)"> <div class="btn dateButton border rounded px-2 "> ' + day.toDateString() + '</div> </div>';
+      }
+    }
+
+    $('.calendar').append(calendarDatesHtml);
+}
+
+
+
+function displayMonth(day) {
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const d = new Date(day.date);
+  const today = new Date();
+  $("#monthDisplay").val(monthNames[d.getMonth()] + " " + d.getFullYear());
+  $("[data-month]").attr("data-month", "" + d.getMonth());
+
+  const nextMonth = d.getMonth() + 1;
+  if (today.getMonth() + 1 > d.getMonth()) {
+    $("#nextMonthButton").val(nextMonth);
+    $("#nextMonthButton").removeAttr("disabled");
+  } else {
+    $("#nextMonthButton").attr("disabled", "");
+  }
+
+  const prevMonth = d.getMonth() - 1;
+  if (today.getMonth() < d.getMonth()) {
+    $("#prevMonthButton").val(prevMonth);
+    $("#prevMonthButton").removeAttr("disabled");
+  } else {
+    $("#prevMonthButton").attr("disabled", "");
+  }
 }
 
 
@@ -1013,7 +1079,7 @@ async function fetchDriverUpdate(evt){
     savableDriver = {_id:clientDeiverStatus[driverIndex]._id, driverName:driverName, date:clientDeiverStatus[driverIndex].date, driverAllias:clientDeiverStatus[driverIndex].driverAllias, driverNumber:driverNumber, lastUpdated:latestEvent, manifest:allManifest} // replace the savable manifest, with mongodb friendly manifest
     console.log(clientDeiverStatus[driverIndex]);
     console.log(savableDriver);
-    setTotalOFD(totalOFD);
+    setTotalOFD(totalOFD, {updateWeekly:true});
       if(totalOnlinePulls > 0){
         saveIndividualDriverStatus(savableDriver).then((res) => {
           console.log('Sent Save operation call');
@@ -1497,12 +1563,16 @@ async function todaysEvents(events, dateTime){
   let finalEvents = [];
   let today = (new Date(dateTime)).setHours(28,0,0,0);
   // let date = today.getDate();
-  for await(event of events){
-    eventDate = new Date(event.UtcEventDateTime).setHours(0,0,0,0);
-    // console.log("eventDate ", eventDate, " -- today: ", today );
-    if(eventDate <= today){
-      finalEvents.push(event);
+  if(events != 404 && events != 500){
+    for await(event of events){
+      eventDate = new Date(event.UtcEventDateTime).setHours(0,0,0,0);
+      // console.log("eventDate ", eventDate, " -- today: ", today );
+      if(eventDate <= today){
+        finalEvents.push(event);
+      }
     }
+  }else{
+    finalEvents = events;
   }
   return finalEvents;
 }
@@ -1513,10 +1583,14 @@ function getToday(){
 }
 
 
-async function setTotalOFD(ofd) {
+async function setTotalOFD(ofd, opts) {
+  updateWeekly = false;
+  if(opts){
+    updateWeekly = opts.updateWeekly ? opts.updateWeekly : false;
+  }
   if(ofd > 0){
     $("#totalOFD").text(ofd);
-  }else if(!stopReportPull){
+  }else if(!stopReportPull && updateWeekly){
     console.log("now will be a good time to log a weekly report");
     $("#totalOFD").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Updating WR, Please wait...');
     await updateWeeklyReport().then(function (result) {
@@ -1544,6 +1618,7 @@ async function setTotalOFD(ofd) {
           console.log(err);
     });
   }else{
+    $("#totalOFD").text(ofd);
     console.log("cant save WR, pull was stopped abrubptley");
   }
 }
@@ -1849,7 +1924,7 @@ async function showDelieveredStops(evt){
 }
 
 
-//updateWeekelyReport() saves the days finalized delivered# to an already existing WR or creates one if other.
+//updateWeeklyReport() saves the days finalized delivered# to an already existing WR or creates one if other.
 async function updateWeeklyReport(){
   drivers = [];
   startDate = (await getWeekDates(clientDeiverStatus[0].date))[0];
@@ -1881,16 +1956,40 @@ async function updateWeeklyReport(){
   }
 }
 
-async function extractMail(){
+function extractPastManifest(){
+  console.log("selected Date to extract: ", selectedReportDateTime);
+  extractMail({extractDateTime:selectedReportDateTime});
+}
+
+
+async function extractMail(opts){
+  selectedExtractionDateTime = 0;
+  if(opts){
+    if (opts.extractDateTime){
+      selectedExtractionDateTime = opts.extractDateTime ? (new Date(Number(opts.extractDateTime)).setHours(0,0,0,0)) : 0; 
+    }
+  }
+  $("#extractMailButton").addClass("disabled");
+  $("#extractPastManifestButton").addClass("disabled");
   $("#pullRequestButton").addClass("disabled");
   $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="report-process-status" role="status">Extracting Mails...</span></span>');
   try {
-    await $.get("http://localhost:3055/extract/0", function (response) {
+    await $.get("http://localhost:3055/extract/"+selectedExtractionDateTime, function (response) {
       if(response?.successfull){
         console.log("EXTRACTION COMPLETED");
+        $("#totalOFD").html("Extraction Completed. Total Drivers:."+ response.driverCount);
+          setTimeout(() => {
+            $("#totalOFD").html(totalOFD);
+            pullPastReport(selectedExtractionDateTime);
+          }, 7000);
         console.log(response);
+        
       }else{
         console.log("EXTRACTION FAILED");
+        $("#totalOFD").html("Extraction Failed: " + response.message);
+          setTimeout(() => {
+            $("#totalOFD").html(totalOFD);
+          }, 7000);
         console.log(response);
       }
     })
@@ -1912,6 +2011,81 @@ async function extractMail(){
     
   }
   $("#pullRequestButton").removeClass("disabled");
+  $("#extractMailButton").removeClass("disabled");
+  $("#extractPastManifestButton").removeClass("disabled");
+  $("#pullRequestButton").html('Pull Report');
+}
+
+async function deleteDR(){
+  console.log("selected Date to Delete: ", selectedReportDateTime);
+  const enteredPassword = await prompt('Enter SuperAdmin Password:');
+  console.log(enteredPassword);
+  deleteReport({deleteDateTime:selectedReportDateTime, password:enteredPassword});
+}
+
+
+async function deleteReport(opts){
+  selectedExtractionDateTime = 0;
+  password = "null";
+  if(opts){
+    if (opts.deleteDateTime){
+      selectedExtractionDateTime = opts.deleteDateTime ? new Date(Number(opts.deleteDateTime)).setHours(0,0,0,0) : selectedReportDateTime; 
+    }
+    if (opts.password){
+      password = opts.password ? opts.password : "null"; 
+    }
+  }
+  console.log("final date to be delted: ", selectedExtractionDateTime , " : ", new Date(selectedExtractionDateTime));
+  $("#deleteReportButton").addClass("disabled");
+  $("#pullRequestButton").addClass("disabled");
+  $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="report-process-status" role="status">Deleting Report...</span></span>');
+  try {
+    await $.get(domain + "/deleteDriverReport/"+selectedExtractionDateTime+"/"+password+"", function (response) {
+      if(response?.successfull){
+        console.log(response);
+        console.log("DELETION COMPLETED");
+        if(response.deletedCount > 0){
+          $("#totalOFD").html("Deletion Completed. Total Records Deleted:."+ response.deletedCount);
+          setTimeout(() => {
+            $("#totalOFD").html(totalOFD);
+          }, 7000);
+          console.log(response);
+        }else{
+          $("#totalOFD").html("Operation successful: No Records were Deleted.");
+          setTimeout(() => {
+            $("#totalOFD").html(totalOFD);
+          }, 7000);
+          console.log(response);
+        }
+        
+      }else{
+        console.log("DELETION FAILED");
+        $("#totalOFD").html("Deletion Failed: " + response.message);
+          setTimeout(() => {
+            $("#totalOFD").html(totalOFD);
+          }, 7000);
+        console.log(response);
+      }
+    })
+  } catch (error) {
+    console.log("Encountered an Error Deleting REports");
+    console.log(error);
+    console.log(error.status);
+    if(error.status == 0){
+      $("#totalOFD").html("Email Extraction Server isnt running. Try again after starting it.");
+          setTimeout(() => {
+          $("#totalOFD").html(totalOFD);
+      }, 7000);
+    }else if(error.status == 200){
+      $("#totalOFD").html("Deletion Completed with possible errors.");
+          setTimeout(() => {
+          $("#totalOFD").html(totalOFD);
+      }, 7000);
+    }
+    
+  }
+  $("#pullRequestButton").removeClass("disabled");
+  $("#deleteReportButton").removeClass("disabled");
   $("#pullRequestButton").html('Pull Report');
 }
 
@@ -1939,7 +2113,16 @@ async function getWeekDates(randomDate) {
   return weekDates;
 }
 
-
+function selectDate(evt){
+  dateButton = $(evt);
+  dateButtonChild = dateButton.children("div");
+  $(".dateButton").removeClass("border-accent").addClass("border");
+  $(".today").removeClass("border")
+  dateButtonChild.addClass("border-accent").removeClass("border");
+  selectedReportDateTime = Number(dateButton.attr("value"));
+  // console.log(selectedReportDateTime);
+  // console.log("Selected Date:", new Date(selectedReportDateTime));
+} 
 
 async function prepareWeeklyReportInterface(){
   $("#weeklyReportMsg").show();
@@ -1958,6 +2141,44 @@ async function getDateOfSpecificDay(startDate, dayOfWeek) {
 }
 
 
+function getPastDates() {
+  // Get the current date
+  const currentDate = new Date();
+  currentDate.setHours(0,0,0,0)
+  // Create an array to store the past thirty dates
+  const pastDates = [];
+
+  // Loop through the past thirty days and add them to the array
+  for (let i = 29; i >= 0; i--) {
+    const pastDate = new Date(currentDate);
+    pastDate.setDate(currentDate.getDate() - i);
+    pastDates.push(pastDate);
+  }
+
+  return pastDates;
+}
+
+function compareDates(t, d) {
+  let comparison = 0;
+  if (t.getFullYear() > d.getFullYear()) {
+    comparison = 1;
+  } else if (t.getFullYear() < d.getFullYear()) {
+    comparison = -1;
+  } else if (t.getFullYear() === d.getFullYear()) {
+    if (t.getMonth() > d.getMonth()) {
+      comparison = 1;
+    } else if (t.getMonth() < d.getMonth()) {
+      comparison = -1;
+    } else if (t.getMonth() == d.getMonth()) {
+      if (t.getDate() > d.getDate()) {
+        comparison = 1;
+      } else if (t.getDate() < d.getDate()) {
+        comparison = -1;
+      }
+    }
+  }
+  return comparison;
+}
 
 async function setAvailableWeeks(){
     $.get(domain + '/getWeeklyReportRanges', async function (reportDates) {

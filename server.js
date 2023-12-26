@@ -21,6 +21,7 @@ const MONGOUSER = process.env.MONGOUSER;
 const MONGOTCS_USER = process.env.MONGOTCS_USER;
 const MONGOTCS_PASS = process.env.MONGOTCS_PASS;
 
+const DELETE_PASSWORD = process.env.DELETE_PASSWORD;
 // const axios = require('axios');
 
 const TRACKINGURL = process.env.TRACKINGURL;
@@ -715,10 +716,13 @@ app.route(APP_DIRECTORY + "/getDriverReport")
     // today = yesterday; // Remove before publshing - Fetches the previous days report
     let report = await DriverReport.find({date:today},'-__v');
     
+    // Disbaled Searching for Report In DevDB
+    /*
     if(!report.length){
       console.log("trying DEV Database");
       report = await DevDriverReport.find({date:today},'-__v');
     }
+    */
 
     if(report.length){
       res.send(report);
@@ -775,27 +779,27 @@ app.route(APP_DIRECTORY + "/getDriverReport/:date")
       if(report.length){
         res.send(report);
       }else{
-        console.log('atempting to find past report in Development DB');
-        report = await DevDriverReport.find({_id:date},'-__v');
-        console.log("report from deve db: ", report.length);
-        if(!report.length){
-          console.log('atempting to find past report in single DB');
-          report = await Report.find({_id:date},'-__v');
-          if(report.length){
-              processingResult = await convertSingleReport(report[0],{date:date}); 
-              drivers = processingResult.drivers;
-              errors = [...errors,...processingResult.errors];
-              if(drivers.length > 0){
-                res.send(drivers);
-                if(errors.length)
-                console.error(errors);
-            }else{
-              res.send({error:errors, msg:"Error In Converting"});
-            }
+        // console.log('atempting to find past report in Development DB');
+        // report = await DevDriverReport.find({_id:date},'-__v');
+        // console.log("report from deve db: ", report.length);
+        
+        console.log('atempting to find past report in single DB');
+        report = await Report.find({_id:date},'-__v');
+        if(report.length){
+            processingResult = await convertSingleReport(report[0],{date:date}); 
+            drivers = processingResult.drivers;
+            errors = [...errors,...processingResult.errors];
+            if(drivers.length > 0){
+              res.send(drivers);
+              if(errors.length)
+              console.error(errors);
           }else{
-            res.send({error:errors, msg:"Could not fin Old REport"});
+            res.send({error:errors, msg:"Error In Converting"});
           }
+        }else{
+          res.send({error:errors, msg:"Could not fin Old REport"});
         }
+        
       }
     }else{
       res.send({err:"Not Found", msg:"",param});
@@ -814,14 +818,14 @@ app.route(APP_DIRECTORY + "/getDriverFullReport/:driverNumber")
       if(report.length){
         res.send(report);
       }else{
-        console.log('atempting to find past report in Development DB');
-        report = await DevDriverReport.find({driverNumber:driverNumber},'-__v');
-        console.log("report from deve db: ", report.length);
-        if(report.length){
-          res.send(report);
-        }else{
+        // console.log('atempting to find past report in Development DB');
+        // report = await DevDriverReport.find({driverNumber:driverNumber},'-__v');
+        // console.log("report from deve db: ", report.length);
+        // if(report.length){
+        //   res.send(report);
+        // }else{
           res.send({err:"Not Found after all avenues", msg:"",driverNumber});
-        }
+        // }
       }
     }else{
       res.send({err:"Not Found", msg:"",driverNumber});
@@ -839,14 +843,14 @@ app.route(APP_DIRECTORY + "/getSingleDriverReport")
       if(report){
         res.send(report);
       }else{
-        console.log('atempting to find past report in Development DB');
-        report = await DevDriverReport.findOne({driverNumber:driverNumber, date:date},'-__v');
-        console.log("report from deve db: ", report.length);
-        if(report){
-          res.send(report);
-        }else{
+        // console.log('atempting to find past report in Development DB');
+        // report = await DevDriverReport.findOne({driverNumber:driverNumber, date:date},'-__v');
+        // console.log("report from deve db: ", report.length);
+        // if(report){
+          // res.send(report);
+        // }else{
           res.send({err:"Not Found after all avenues", msg:"",driverNumber});
-        }
+        // }
       }
     }else{
       res.send({err:"Not Found", msg:""+driverNumber+" - "+ date});
@@ -855,31 +859,35 @@ app.route(APP_DIRECTORY + "/getSingleDriverReport")
 
 
 /**** Deleting Reports **********/
-app.route(APP_DIRECTORY + "/deleteDriverReport/:date")
+app.route(APP_DIRECTORY + "/deleteDriverReport/:date/:deletePassword")
   .get(async function (req, res) {
-    let param = Number(req.params.date);
-    let date = null;
-    console.log(param);
-    if(param != 0){
-      date = (new Date(param)).setHours(0,0,0,0);
+    if(req.user.isSuperAdmin || (req.params.deletePassword == DELETE_PASSWORD)){
+      let param = Number(req.params.date);
+      let date = null;
+      console.log(req.params.deletePassword == DELETE_PASSWORD);
+      if(param != 0){
+        date = (new Date(param)).setHours(0,0,0,0);
+      }else{
+        date = (new Date()).setHours(0,0,0,0);
+      }
+      let errors = [];
+      // console.log(param);
+      // console.log(date);
+      if(date){
+        await DriverReport.deleteMany({date:date}, (err,result) => {
+          if (err) {
+            console.error('Error deleting users:', err);
+            res.send({successfull:false, err:err, msg:"Error deleting Reports"});
+          } else {
+            console.log(`Deleted ${result.deletedCount} reports.`);
+            res.send({successfull:true, err:"", deletedCount:result.deletedCount, msg:'Deleted '+ result.deletedCount+ ' reports.'});
+          }
+        });  
+      }else{
+        res.send({err:"Invalid Argument", msg:"",param});
+      }
     }else{
-      date = (new Date()).setHours(0,0,0,0);
-    }
-    let errors = [];
-    // console.log(param);
-    // console.log(date);
-    if(date){
-      await DriverReport.deleteMany({date:date}, (err,result) => {
-        if (err) {
-          console.error('Error deleting users:', err);
-          res.send({err:err, msg:"Error deleting Reports"});
-        } else {
-          console.log(`Deleted ${result.deletedCount} reports.`);
-          res.send({err:"", msg:'Deleted '+ result.deletedCount+ ' reports.'});
-        }
-      });  
-    }else{
-      res.send({err:"Invalid Argument", msg:"",param});
+          res.send({successfull:false, err:"ADMIN_PRIVILEDGES_REQUIRED", msg:'Access Denied.'});
     }
 })
 
@@ -1100,10 +1108,10 @@ app.route(APP_DIRECTORY + "/getContractorsList")
 
 try{
   app.listen(process.env.PORT || 3060, function () {
-    keepAlive();
+    // keepAlive();
     clearTempFolder();
     cacheBrands();
-    cacheReports();
+    // cacheReports();
     console.error(new Date().toLocaleString() + " >> Dashboard is live on port " + ((process.env.PORT) ? process.env.PORT : 3060));
   })
 }catch(error ) {
@@ -1619,7 +1627,13 @@ function populateExcelDataForPrint(fileName, addresses, userName) {
 }
 
 async function cacheBrands(){
-  allBrands = await Brand.find({},"-__v");
+  try{
+    allBrands = await Brand.find({},"-__v");
+  }catch (error){
+    console.log(outputDate() , " Failed to Load Online Brands");
+  }
+
+
   stringBrands = JSON.stringify(allBrands);
   // reCon = JSON.parse(stringBrands);
   // console.log(reCon);
@@ -1634,9 +1648,8 @@ async function cacheBrands(){
            fs.writeFile(tempFilePath + 'brands.txt', stringBrands, err => {
               if (err) {
                 console.error(err);
-              }else{
-                if(SERVER) 
-                console.log("Brands written to file");
+              }else{ 
+                console.log(outputDate() + "Brands cached and ready");
             }
           }); 
         } else {

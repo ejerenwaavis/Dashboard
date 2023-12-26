@@ -18,11 +18,14 @@
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item btn" onclick="stopPullingProcess()">Stop Report Pull</a></li>
                     <%if(user.isSuperAdmin){%>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
+                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item btn" id="extractMailButton" onclick="extractMail()">Extract Manifests</a></li>
                         <li><a class="dropdown-item btn" onclick="updateWeeklyReport()">Update WR</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item btn" id="extractPastManifestButton" data-bs-toggle="modal" data-bs-target="#extractPastManifestDatePicker" onclick="showDateModal()">Extract Past Manifest</a></li>
+                        <li><a class="dropdown-item btn" id="extractPastReportButton" data-bs-toggle="modal" data-bs-target="#pastReportDatePicker" onclick="showDateModal()">Display Past Report</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item btn" id="deleteReportButton" data-bs-toggle="modal" data-bs-target="#deleteReportDatePicker" onclick="showDateModal()">Delete Report</a></li>
                     <%}%>
                 </ul>
                 <button type="button" role="button" data-bs-toggle="dropdown" aria-expanded="false" class="btn btn-sm btn-outline-secondary"> 
@@ -96,5 +99,101 @@
             </table>
         </div>
     </div>
+
+    <!-- Button trigger modal -->
+    
+    <!-- Modal -->
+    <div class="modal fade" id="pastReportDatePicker" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">Select Report Date</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="" id="datePane">
+                        
+                        
+                        <div class="container-fluid" >
+                            <div class="row row-cols-4 g-2 align-items-center calendar" id="">
+                                
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-accent" data-bs-dismiss="modal" onclick="fetchPastReport()">Display Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="deleteReportDatePicker" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">Select Report Date to be Deleted</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="" id="">
+    
+    
+                        <div class="container-fluid">
+                            <div class="row row-cols-4 g-2 align-items-center calendar" id="">
+    
+                            </div>
+                        </div>
+    
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-accent" data-bs-dismiss="modal" onclick="deleteDR()">Delete
+                        Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="extractPastManifestDatePicker" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">Select Extraction Date</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="" id="datePane">
+                        <div class="container-fluid">
+                            <div class="row row-cols-4 g-2 align-items-center calendar" id="">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-accent" data-bs-dismiss="modal" onclick="extractPastManifest()">Extract Past Manifest</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function () {
+            $('#datepicker').datepicker();
+        });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
     <script src="<%= body.publicFolder %>js/report.js" type="text/javascript"></script>
 </section>
+
+
+
