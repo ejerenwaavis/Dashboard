@@ -2136,6 +2136,21 @@ async function prepareWeeklyReportInterface(){
   await stagePulling();
 }
 
+async function prepareWeeklyMLSIReportnterface(){
+  for await(driver of clientDeiverStatus){
+    let htmlHead = '<div class="accordion-item">'
+                    +'<h2 class="accordion-header">'
+                    +'<button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne"'
+                    + 'aria-expanded="true" aria-controls="collapseOne">'
+                    +    '256956 | AVIS EJERENWA | 2'
+                    +'</button>'
+                    +'</h2>'
+                console.log(htmlHead);
+  }
+
+
+}
+
 
 async function getDateOfSpecificDay(startDate, dayOfWeek) {
   const today = new Date(new Date(startDate).getTime());

@@ -1,0 +1,200 @@
+<section id="mlsReport">
+    <div class="container-fluid px-0">
+        <div class="d-flex justify-content-between align-items-end">
+            <div class="">
+                <h6 class="placard-title fw-bold text-mute col d-inline">MLS Reports</h6>
+            </div>
+            
+            <div  class="py-2 btn-group" role="group" >
+                <button onclick="pullReport()" id="pullRequestButton" class="btn btn-sm btn-secondary disabled">Pull Reports</button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item btn" onclick="stopPullingProcess()">Stop Report Pull</a></li>
+                    <%if(user.isSuperAdmin){%>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item btn" id="extractMailButton" onclick="extractMail()">Extract Manifests</a></li>
+                        <li><a class="dropdown-item btn" onclick="updateWeeklyReport()">Update WR</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item btn" id="extractPastManifestButton" data-bs-toggle="modal" data-bs-target="#extractPastManifestDatePicker" onclick="showDateModal()">Extract Past Manifest</a></li>
+                        <li><a class="dropdown-item btn" id="extractPastReportButton" data-bs-toggle="modal" data-bs-target="#pastReportDatePicker" onclick="showDateModal()">Display Past Report</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item btn" id="deleteReportButton" data-bs-toggle="modal" data-bs-target="#deleteReportDatePicker" onclick="showDateModal()">Delete Report</a></li>
+                    <%}%>
+                </ul>
+                <button type="button" role="button" data-bs-toggle="dropdown" aria-expanded="false" class="btn btn-sm btn-outline-secondary"> 
+                    <span class=""><i class="bi bi-three-dots-vertical"></i></span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="placard p-3 rounded shadow">
+        <div class="modal fade" id="detailModal" tabindex="-2" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="fs-5 fw-bold text-capitalize" id="detailsHeader">
+                            Username</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div id="" class="modal-body">
+                        <table id="detailModalTable" class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <td>BARCODE</td>
+                                    <td>BRAND</td>
+                                    <td>NAME</td>
+                                    <td>STREET</td>
+                                    <td>CITY</td>
+                                    <td>STATE</td>
+                                    <td>STATUS</td>
+                                    <td>LAST EVENT</td>
+                                </tr>
+                            </thead>
+                            <!-- Data -->
+                            <tbody class="detailModalTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion" id="mlsReportBody">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne"
+                        aria-expanded="true" aria-controls="collapseOne">
+                        256956 | AVIS EJERENWA | 2
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                        <div class="table-responsive">
+                            <table id="mlsDetails" class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <td>IC #</td>
+                                        <td><span class=" " data="name" onclick="sortBy(this)">NAME</span></td>
+                                        <td><span class=" " data="load" onclick="sortBy(this)">LOAD</span></td>
+                                        <td><span class=" " data="ofd" onclick="sortBy(this)">OFD</span></td>
+                                        <td><span class=" " data="pofd" onclick="sortBy(this)">POFD</span></td>
+                                        <td><span class=" " data="del" onclick="sortBy(this)">DEL</span></td>
+                                        <td><span class=" " data="attempts" onclick="sortBy(this)">ATTEMPTS</span></td>
+                                        <td><span class=" " data="mls" onclick="sortBy(this)">MLS</span></td>
+                                        <td>PROGRESS</td>
+                                        <td><span class=" " data="event" onclick="sortBy(this)">EVENT</span></td>
+                                    </tr>
+                                </thead>
+                                <!-- Data -->
+                                <tbody >
+                        
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td id="sync-warning" class="d-none" colspan="10"><span class="text-danger opacity-75"
+                                                style="color: red;">Driver
+                                                Manifest has not yet been Synchrosnized with the Ontrac Server,
+                                                Click "Pull Report" to Sync. [ <a class="link-primary">(<span id="driverLength" class=""
+                                                        onclick="showUploadedDrivers()"></span>)</a> ]</span></td>
+                                    </tr>
+                        
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+    </div>
+
+    <!-- Button trigger modal -->
+    
+    <!-- Modal -->
+    <div class="modal fade" id="pastReportDatePicker" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">Select Report Date</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="" id="datePane">
+                        
+                        
+                        <div class="container-fluid" >
+                            <div class="row row-cols-4 g-2 align-items-center calendar" id="">
+                                
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-accent" data-bs-dismiss="modal" onclick="fetchPastReport()">Display Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="deleteReportDatePicker" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">Select Report Date to be Deleted</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="" id="">
+    
+    
+                        <div class="container-fluid">
+                            <div class="row row-cols-4 g-2 align-items-center calendar" id="">
+    
+                            </div>
+                        </div>
+    
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-accent" data-bs-dismiss="modal" onclick="deleteDR()">Delete
+                        Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="extractPastManifestDatePicker" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">Select Extraction Date</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="" id="datePane">
+                        <div class="container-fluid">
+                            <div class="row row-cols-4 g-2 align-items-center calendar" id="">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-accent" data-bs-dismiss="modal" onclick="extractPastManifest()">Extract Past Manifest</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</section>
+
+
+
