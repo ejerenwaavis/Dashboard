@@ -429,13 +429,13 @@ async function displayReport(report, opts) {
     }
     html="";
     driverStatus.push({ _id:driver._id, driverName:driverName, date:driver.date, driverAllias:driver.driverAllias, driverNumber:driver.driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
-    if(!opts){
+    if(isTodayReport(driver.date)){
       if(totalOnlineDriverPulls){
         saveIndividualDriverStatus(driver).then((res) => {
           console.log('saved', res);
         });
       }else{
-        console.log("aint saving shit");
+        console.log("NOT SAVING - Total OnlonePull: ", totalOnlineDriverPulls);
       }
     }else{
       console.log("Backdateed Report! DO NOT SAVE");
@@ -1580,6 +1580,12 @@ async function todaysEvents(events, dateTime){
 
 function getToday(){
   return (new Date()).setHours(0,0,0,0);
+}
+
+async function isTodayReport(reportDate){
+  let today = (new Date()).setHours(0,0,0,0);
+  let reportDateTime = (new Date(reportDate)).setHours(0,0,0,0);
+  return today === reportDateTime;
 }
 
 
