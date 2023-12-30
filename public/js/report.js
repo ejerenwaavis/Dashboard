@@ -2136,19 +2136,70 @@ async function prepareWeeklyReportInterface(){
   await stagePulling();
 }
 
-async function prepareWeeklyMLSIReportnterface(){
-  for await(driver of clientDeiverStatus){
-    let htmlHead = '<div class="accordion-item">'
-                    +'<h2 class="accordion-header">'
-                    +'<button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne"'
-                    + 'aria-expanded="true" aria-controls="collapseOne">'
-                    +    '256956 | AVIS EJERENWA | 2'
-                    +'</button>'
-                    +'</h2>'
-                console.log(htmlHead);
+async function prepareMLSReportnterface(){
+  $("#pullMLSReportButton").addClass("disabled");
+  $("#pullMLSReportButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="mls-process-status" role="status">Preping MLS Report...</span></span>');
+  $('#mlsReportBody').empty();
+  if(clientDeiverStatus.length){
+    for await(driver of clientDeiverStatus){
+      stopArray = [...driver.manifest.pmls,...driver.manifest.mls,...driver.manifest.problemStops];
+      if(stopArray.length){
+        let tableID = driver.driverNumber+'-mlsDetails';
+        let driverCollapseID = driver.driverNumber+'-collapse';
+        let htmlStart = '<div class="accordion-item">'
+                        +'<h2 class="accordion-header bg-secondary bg-opacity-25 text-dark">'
+                        +'<button class="accordion-button bg-secondary bg-opacity-10 text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#'+driverCollapseID+'"'
+                        + ' >'
+                        + driver.driverNumber + ' - <b> &nbsp;' + driver.driverName + ' - ' + stopArray.length + '</b>'
+                        +'</button>'
+                        +'</h2>'
+                        +'<div id="'+driverCollapseID+'" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">'
+                        +'<div class="accordion-body">';
+                    
+        let tableHead = '<div class="table-responsive">'
+            +'<table id="'+tableID+'" class="table table-hover">'
+            +'<thead>'
+            +'<tr>'
+            +'<td><span class=" " data="barcode" onclick="mlsSortBy(this)">BARCODE</span></td>'
+            +'<td><span class=" " data="brand" onclick="mlsSortBy(this,"'+tableID+'")">BRAND</span></td>'
+            +'<td><span class=" " data="name" onclick="mlsSortBy(this)">NAME</span></td>'
+            +'<td><span class=" " data="street" onclick="mlsSortBy(this)">STREET</span></td>'
+            +'<td><span class=" " data="city" onclick="mlsSortBy(this)">CITY</span></td>'
+            +'<td><span class=" " data="state" onclick="mlsSortBy(this)">STATE</span></td>'
+            +'<td><span class=" " data="status" onclick="mlsSortBy(this)">STATUS</span></td>'
+            +'<td><span class=" " data="event" onclick="mlsSortBy(this)">LAST EVENT</span></td>'
+            +'</tr>'
+            +'</thead>'
+            +'<tbody >';
+
+        let tableFoot = '</tbody> </table> </div>'
+        let htmlEnd = '</div> </div> </div>';
+        let html = htmlStart + tableHead + tableFoot + htmlEnd;
+        $('#mlsReportBody').append(html);
+
+        let tableBody = "";
+
+        for await (const stop of stopArray){
+          let tableBody = '<tr class="table-bordered">';
+          let barcodeColor = (await (isPriority(stop))) ? "link-danger" : "link-secondary";  
+          tableBody += '<td> <a class="'+barcodeColor+' link-offset-2" href="https://triumphcourier.com/barcodetool/track/'+(stop.barcode)+'" target="_blank">'+(stop.barcode)+' <i class="bi bi-search"></i></a></td>';
+          tableBody += '<td> '+ stop.brand +'</td>';
+          tableBody += '<td> '+ stop.name +'</td>';
+          tableBody += '<td>'+ stop.street +'</td>';
+          tableBody += '<td> '+ stop.city +'</td>';
+          tableBody += '<td> '+ stop.state +'</td>';
+          tableBody += '<td> '+ ((stop.Events? stop.Events[0].Status : null) ?? stop.lastScan) + '</td>';
+          tableBody += '<td>'+ (new Date((stop.Events? stop.Events[0].UtcEventDateTime : false) ?? driver.date).toLocaleString()) + '</td>';
+          tableBody += "</tr>";
+          $('#'+tableID+' tbody').append(tableBody);
+        }    
+      }
+    }
+  }else{
+    $('#mlsReportBody').html('<div class="text-center container"> Driver Updates Aren\'t available at the moment. Click <b class="text-accent" > Load MLS Report </b> to attempt reloading the report. if you still see this message then check the <b class="text-accent" > Delivery Report </b> page to ensure that driver manifests has been ectracted from email. </div>');  
   }
-
-
+  $("#pullMLSReportButton").removeClass("disabled");
+  $("#pullMLSReportButton").html('Load MLS Report');
 }
 
 
