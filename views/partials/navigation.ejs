@@ -30,6 +30,7 @@
                     Weekly Report
                 </a>
             </li>
+            <%}%>
             <li class="nav-item" data-bs-toggle="tab" onclick="prepareMLSReportnterface()" data-bs-target="#mlsreports-tab"
                 type="button" role="presentation" aria-controls="mlsreports-tab" aria-selected="false">
                 <a class="nav-link" href="#">
@@ -37,7 +38,6 @@
                     <span class="nav-text">MLS</span>
                 </a>
             </li>
-            <%}%>
 
             <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                 <span>Schedular</span>
@@ -92,10 +92,11 @@
             </h6>
             <hr>
 
-            <li class="nav-item">
+            <li class="nav-item" data-bs-toggle="tab" onclick="prepareEmployeeInterface()" data-bs-target="#drivers-tab"
+                type="button" role="presentation" aria-controls="drivers-tab" aria-selected="false">
                 <a class="nav-link" href="#">
                     <i class="fas fa-user"></i>
-                    Drivers
+                    <span class="nav-text">Drivers</span>
                 </a>
             </li>
 
