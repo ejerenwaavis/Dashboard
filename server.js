@@ -2017,7 +2017,7 @@ const priorityBrands = [
 ]
 
 
-const contractors = [
+contractors = [
   { driverNumber : '203593', name : 'Frankie ROBINSON'},
   { driverNumber : '219029', name : 'Andreea OKONTA'},
   { driverNumber : '227410', name : 'Yacouba NABE'},
@@ -2111,4 +2111,13 @@ const contractors = [
   { driverNumber : '272612', name : 'Shiquita JAMES'},
   { driverNumber : '272883', name : 'Briana HARPER'},
   { driverNumber : '272950', name : 'Tiffany SWANSON'},
+  { driverNumber : '273294', name : 'Salena CARTER'},
+  { driverNumber : '273985', name : 'Diana PRIETO'},
+  { driverNumber : '275899', name : 'Kariela ANEZ ARAUJO'},
+  { driverNumber : '277229', name : 'Charles PARKS'},
+  { driverNumber : '277253', name : 'Claudancy COEUR'},
+  { driverNumber : '278482', name : 'Shekinah DAVIS'},
+  { driverNumber : '279195', name : 'Reginald SMITH'},
+  { driverNumber : '280413', name : 'Ninozka ZABALA'},
+  { driverNumber : '280445', name : 'Danny PRIESTER'},
 ]
