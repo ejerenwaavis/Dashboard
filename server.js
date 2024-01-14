@@ -25,6 +25,7 @@ const DELETE_PASSWORD = process.env.DELETE_PASSWORD;
 // const axios = require('axios');
 
 const TRACKINGURL = process.env.TRACKINGURL;
+const EXTRACTINGURL = process.env.EXTRACTINGURL ?? 'http://localhost:3055/extract/';
 const LSTRACKINGURL = process.env.LSTRACKINGURL;
 
 
@@ -693,6 +694,8 @@ app.route(APP_DIRECTORY + "/saveDriverStatus")
             res.send({successfull:false, msg:"Save Incomplete"})
           }
         }catch(err){
+          console.error("Failed to perform save: "+driver.driverName);
+          console.error(err);
           res.send({successfull:false, error:err, msg:"Failed to perform save: "+driver.driverName})
         }
       }else{
@@ -1069,6 +1072,20 @@ app.route(APP_DIRECTORY + "/getLSURL")
     // (req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| 
     if((req.isAuthenticated && req.hostname.includes("triumphcourier.com")) || DEVELOPEMENT){
       res.send(""+LSTRACKINGURL+"");
+    }else{
+      console.error("Tried to get Tracking URL from unauhtenticated/Unauthorized request");
+      res.send("unauthorized request")
+    }
+})
+
+app.route(APP_DIRECTORY + "/getExtractingURL")
+  .get(function (req, res) {
+    // console.error(outputDate() + " Hostname: "+req.hostname);
+    // console.error("Developement: " + DEVELOPEMENT);
+    // (req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| 
+    if((req.isAuthenticated && req.hostname.includes("triumphcourier.com")) || DEVELOPEMENT){
+      
+      res.send(""+EXTRACTINGURL+"");
     }else{
       console.error("Tried to get Tracking URL from unauhtenticated/Unauthorized request");
       res.send("unauthorized request")

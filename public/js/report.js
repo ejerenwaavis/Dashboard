@@ -1,6 +1,7 @@
 let domain = $('#domain').attr('domain');
 let trackingResource = "";
 let trackingResource2 = "";
+let EXTRACTINGURL = "";
 let priorityBrands = null;
 let drivers = [];
 let clientDeiverStatus = [];
@@ -20,6 +21,7 @@ window.onload = async (event) => {
   $("#deliveryReport-nav-button").click(); //simulates the show action for the nav tabls
   trackingResource = await getTrackingURL();
   trackingResource2 = await getTrackingURL2();
+  EXTRACTINGURL = await getExtractingURL();
   priorityBrands = await getPriorityBrands();
   update = await pullLocalReport();
 };
@@ -1296,6 +1298,18 @@ function getTrackingURL() {
   });
 }
 
+function getExtractingURL(){
+  return new Promise((resolve, reject) => {
+    $.get(domain + '/getExtractingURL', function(data) {
+      // console.log('Tracking URL Acquired');
+      resolve(data);
+    }).fail(function(error) {
+      reject(error);
+    });
+  });
+}
+
+
 function getPriorityBrands() {
   return new Promise((resolve, reject) => {
     $.get(domain + '/getPriorityBrands', function(data) {
@@ -1980,7 +1994,7 @@ async function extractMail(opts){
   $("#pullRequestButton").addClass("disabled");
   $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="report-process-status" role="status">Extracting Mails...</span></span>');
   try {
-    await $.get("http://localhost:3055/extract/"+selectedExtractionDateTime, function (response) {
+    await $.get(EXTRACTINGURL+selectedExtractionDateTime, function (response) {
       if(response?.successfull){
         console.log("EXTRACTION COMPLETED");
         $("#totalOFD").html("Extraction Completed. Total Drivers:."+ response.driverCount);
