@@ -861,6 +861,54 @@ app.route(APP_DIRECTORY + "/getSingleDriverReport")
 });
 
 
+app.route(APP_DIRECTORY + "/switchLoadStatus")
+  .post(async function (req, res) {
+    if(req.user){
+      if(req.user.isProUser){
+        let documentID = (req.body.documentID);
+        let barcode = (req.body.barcode);
+        let errors = [];
+        // console.log(req.body);
+        
+          try {
+            // Retrieve the MongoDB document by ID
+            let report = await DriverReport.findOne({_id:documentID});
+            // console.log(report);
+
+            // Find the array item by ID
+            const arrayItemIndex = report.manifest.findIndex(stop => stop.barcode === barcode);
+            
+            // console.log("\n\n");
+            // console.log(arrayItemIndex);
+            // console.log(report.manifest[arrayItemIndex]);
+            if (arrayItemIndex !== -1) {
+                // Update the property value
+                report.manifest[arrayItemIndex].lastScan = 'Loaded';
+                
+                // Save the updated document
+                await report.save();
+                console.log('Document updated successfully.');
+                res.send({successfull:true, err:"", msg:"Document updated successfully."});
+            } else {
+              console.log('Array item not found.');
+              res.send({successfull:false, err:"Stop Not Found On Driver Manifest", msg:""});
+            }
+          } catch (error) {
+              console.error('Error updating document:', error);
+              res.send({successfull:false, err:"Error on Server Operation [ "+error+" ]", msg:""});
+          }
+          
+        
+      }else{
+          res.send({successfull:false, err:"Admin Priviledge Needed for action", msg:""});
+      }
+    }else{
+          res.send({successfull:false, err:"Unrecognised User", msg:""});
+    }
+});
+
+
+
 /**** Deleting Reports **********/
 app.route(APP_DIRECTORY + "/deleteDriverReport/:date/:deletePassword")
   .get(async function (req, res) {

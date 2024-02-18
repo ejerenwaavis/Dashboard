@@ -16,6 +16,8 @@ eventCodes.problemStops = [];
 let onloadReport = null;
 let totalOFD = NaN;
 let selectedReportDateTime = (new Date().setHours(0,0,0,0));
+let globalTimer = 0;
+let mouseIsDown = false;
 
 window.onload = async (event) => {
   $("#deliveryReport-nav-button").click(); //simulates the show action for the nav tabls
@@ -2175,7 +2177,7 @@ async function prepareMLSReportnterface(){
             +'<thead>'
             +'<tr>'
             +'<td><span class=" " data="barcode" onclick="mlsSortBy(this)">BARCODE</span></td>'
-            +'<td><span class=" " data="brand" onclick="mlsSortBy(this,"'+tableID+'")">BRAND</span></td>'
+            +'<td><span class=" " data="brand" onclick="mlsSortBy(this)"'+tableID+'")">BRAND</span></td>'
             +'<td><span class=" " data="name" onclick="mlsSortBy(this)">NAME</span></td>'
             +'<td><span class=" " data="street" onclick="mlsSortBy(this)">STREET</span></td>'
             +'<td><span class=" " data="city" onclick="mlsSortBy(this)">CITY</span></td>'
@@ -2194,7 +2196,8 @@ async function prepareMLSReportnterface(){
         let tableBody = "";
 
         for await (const stop of stopArray){
-          let tableBody = '<tr class="table-bordered">';
+          let stopAddress = stop.brand + " - " + stop.street + " " + stop.city
+          let tableBody = '<tr onclick="displayConfirmationDialog(this)" driverID="'+driver._id+'" barcode="'+stop.barcode+'" stopAddress="'+stopAddress+'" class="table-bordered">';
           let barcodeColor = (await (isPriority(stop))) ? "link-danger" : "link-secondary";  
           tableBody += '<td> <a class="'+barcodeColor+' link-offset-2" href="https://triumphcourier.com/barcodetool/track/'+(stop.barcode)+'" target="_blank">'+(stop.barcode)+' <i class="bi bi-search"></i></a></td>';
           tableBody += '<td> '+ stop.brand +'</td>';
@@ -2216,6 +2219,59 @@ async function prepareMLSReportnterface(){
   $("#pullMLSReportButton").html('Load MLS Report');
 }
 
+
+function displayConfirmationDialog(evt){
+  $("#switchLoadButton").removeClass("disabled")
+  $('#addToLoadDialog .modal-body .container-fluid').html('<div class="row row-cols-4 g-2 align-items-center calendar" id="confirmDetails"></div>')
+  let event  = $(evt);
+  let driverID = event.attr("driverID");
+  let barcode = event.attr("barcode");
+  let stopAddress = event.attr("stopAddress");
+  $("#confirmDetails").html(stopAddress)
+  $("#mlsLoadFormDriverID").val(driverID)
+  $("#mlsLoadFormBarcode").val(barcode)
+   const addToLoadDialog = new bootstrap.Modal('#addToLoadDialog', {
+    keyboard: true
+  })
+  addToLoadDialog.show();
+}
+
+async function switchLoad(){
+  let mlsLoadForm = $("#mlsLoadForm").serializeArray();
+  let body = $('#addToLoadDialog .modal-body .container-fluid');
+  let oldHtml = body.html();
+  body.html('<div class="spinner-border" role="status"> <span class="visually-hidden">Loading...</span> </div>');
+  $("#switchLoadButton").addClass("disabled")
+  $.post(domain + '/switchLoadStatus', {documentID:mlsLoadForm[0].value, barcode:mlsLoadForm[1].value}, 
+    async function(result) {
+      if(result.successfull){
+        body.html('<span class="text-success"> Updated Load Status Successfully</>')
+        driverIndex = clientDeiverStatus.findIndex(d => d._id == mlsLoadForm[0].value);
+        console.log(driverIndex);
+        stopIndex = clientDeiverStatus[driverIndex].manifest.mls.findIndex(s => s.barcode == mlsLoadForm[1].value);
+        console.log(driverIndex, "  --  " , stopIndex);
+        
+        clientDeiverStatus[driverIndex].manifest.mls[stopIndex].lastScan === "Loaded";
+        
+
+        let removedItem = clientDeiverStatus[driverIndex].manifest.mls.splice(stopIndex, 1)[0];
+        clientDeiverStatus[driverIndex].manifest.ofd.push(removedItem);
+
+        // let combinedStopArray = clientDeiverStatus.manifest.map(obj => obj.values).reduce((acc, val) => acc.concat(val), []);
+        // clientDeiverStatus.manifest = combinedStopArray;
+
+        // displayReport(clientDeiverStatus, {updateWeekly:false} );
+        prepareMLSReportnterface();
+      }else{
+        $("#switchLoadButton").removeClass("disabled")
+        body.html('<span class="text-danger"> Failed to Update Load Status : ' + result.err+'</>')
+      }
+    }).fail(function(error) {
+      $("#switchLoadButton").removeClass("disabled")
+      body.html('<span class="text-danger"> Connection Failed !</>')
+    });
+
+}
 
 async function getDateOfSpecificDay(startDate, dayOfWeek) {
   const today = new Date(new Date(startDate).getTime());
