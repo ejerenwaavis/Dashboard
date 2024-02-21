@@ -71,57 +71,32 @@
     <span class="d-none" id="domain" domain="<%= body.domain %>">
     </span>
 
-    <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
-        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#"><img
-                src=" https://triumphcourier.com/img/Logo-white.png" height="30" alt="">
-            <h5 class="ms-3 mt-2 d-inline-block">Dashboard</h5>
-        </a>
-        <button id="navBarToggle" class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
-            data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
-            aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <input class="form-control form-control-dark w-80" type="text" placeholder="Search" aria-label="Search">
-        <div class="navbar-nav">
-            <div class="nav-item text-nowrap">
+    <header class="navbar navbar-dark sticky-top bg-dark p-0 shadow">
+        <div class="container-fluid">
+            <div class="row">
 
-                <%if(user){%>
-
-                    <div class="px-3">
-                        <a href="" class="btn btn-xs btn-outline-secondary dropdown-toggle" role="button"
-                            id="profileMenu" data-bs-toggle="dropdown" aria-expanded="false">
-                            <!-- <% if(user.photoURL){ %>
-                                <img src="<%=user.photoURL %>" alt="" class="profile-icon">
-                                <% } else { %> -->
-                            <div class="profile-icon bg-secondary">
-                                <i class="fas fa-1x fa-user mt-2 text-white"></i>
-                            </div>
-                            <!-- <% } %> -->
-
-                            <%= user.firstName %>
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-                            <li><a class="dropdown-item" href="https://triumphcourier.com/">TCS Home</a></li>
-                            <!-- <li><a class="dropdown-item" href="<%= body.domain %>/">File Upload</a></li> -->
-                            <!-- <li><a class="dropdown-item" href="<%= body.domain %>/profile">Acount</a></li> -->
-                            <li><a class="dropdown-item" href="<%= body.domain %>/logout">Log Out <i
-                                        class="fas fa-sign-out-alt"></i></a>
-                            </li>
-                            <% if(user.isProUser) {%>
-                                <hr>
-                                <!-- <li><a class="dropdown-item" href="<%= body.domain %>/brandsFileUpload">Brand Upload</a></li> -->
-                                <% } %>
-                        </ul>
-                    </div>
-                    <%}else{%>
-                        <div class="me-2 fs-1">
-                            <h1>
-                                <i class="fs-2 bi bi-person-circle"></i>
-                            </h1>
-                        </div>
-                        <%}%>
+                <div class="col-4 px-4">
+                    <a class="navbar-brand " href="#"><img src=" https://triumphcourier.com/img/Logo-white.png"
+                            height="30" alt="">
+                        <h5 class="ms-3 mt-2 d-inline-block">Dashboard</h5>
+                    </a>
+                </div>
+                <div class="col-8 px-5 ">
+                    <input class="rounded-pill form-control form-control-sm bg-dark w-100 disabled" disabled type="text" placeholder="Search"
+                        aria-label="Search">
+                </div>
+                <div class="col-2">
+                    <button id="navBarToggle" class="navbar-toggler position-absolute d-md-none collapsed" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                </div>
             </div>
         </div>
+
+
+
     </header>
 
     <div class="container-fluid">
@@ -134,11 +109,12 @@
                                 aria-labelledby="deliveryreports-tab" tabindex="0">
                                 <%- include('partials/deliveryreports'); %>
                             </div>
-                            <div class="tab-pane fade" id="weeklyreports-tab" role="tabpane2" aria-labelledby="weeklyreports-tab"
-                                tabindex="0">
+                            <div class="tab-pane fade" id="weeklyreports-tab" role="tabpane2"
+                                aria-labelledby="weeklyreports-tab" tabindex="0">
                                 <%- include('partials/weeklyreports'); %>
                             </div>
-                            <div class="tab-pane fade" id="mlsreports-tab" role="tabpane3" aria-labelledby="mlsreports-tab-tab" tabindex="0">
+                            <div class="tab-pane fade" id="mlsreports-tab" role="tabpane3"
+                                aria-labelledby="mlsreports-tab-tab" tabindex="0">
                                 <%- include('partials/mlsReports'); %>
                             </div>
                         </div>

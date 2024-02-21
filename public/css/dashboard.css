@@ -70,6 +70,10 @@ hr{
     text-transform: uppercase;
 }
 
+#sidebarMenu.sidebar.show{
+    margin-top: -50px;
+}
+
 .success{
     min-height: 300px;
 }
