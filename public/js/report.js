@@ -1991,45 +1991,74 @@ async function extractMail(opts){
       selectedExtractionDateTime = opts.extractDateTime ? (new Date(Number(opts.extractDateTime)).setHours(0,0,0,0)) : 0; 
     }
   }
+
   $("#extractMailButton").addClass("disabled");
   $("#extractPastManifestButton").addClass("disabled");
   $("#pullRequestButton").addClass("disabled");
   $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="report-process-status" role="status">Extracting Mails...</span></span>');
+  //********* activate modal here */
+  $('#infoDialogTittle').text('Extraction Status')
+  $('#infoDialogDetails').html('<div class="spinner-grow" role="status"><span class="visually-hidden">Loading...</span></div>')
+   const infoDialog = new bootstrap.Modal('#infoDialog', {
+    keyboard: true
+  })
+  infoDialog.show();
+
   try {
-    await $.get(EXTRACTINGURL+selectedExtractionDateTime, function (response) {
-      if(response?.successfull){
-        console.log("EXTRACTION COMPLETED");
-        $("#totalOFD").html("Extraction Completed. Total Drivers:."+ response.driverCount);
-          setTimeout(() => {
-            $("#totalOFD").html(totalOFD);
-            pullPastReport(selectedExtractionDateTime);
-          }, 7000);
-        console.log(response);
-        
-      }else{
-        console.log("EXTRACTION FAILED");
-        $("#totalOFD").html("Extraction Failed: " + response.message);
-          setTimeout(() => {
-            $("#totalOFD").html(totalOFD);
-          }, 7000);
-        console.log(response);
-      }
-    })
-  } catch (error) {
+        await $.get(EXTRACTINGURL+selectedExtractionDateTime, function (response) {
+          if(response?.successfull){
+            $('#infoDialogDetails').html('<p>Extraction Succesfull. </p> <p>Total Drivers: '+response.driverCount+'</p>');
+            if(response.errors){
+              $('#infoDialogDetails').append('<b>Errors</b>')
+              response.errors.forEach(element => {
+                $('#infoDialogDetails').append('<p>Sender: '+element?.sender+' | Msg: '+element?.message+'</p>')
+                $('#infoDialogDetails').append('<p> <a onclick="refreshPage()"> Reload <i class="bi bi-arrow-clockwise"></i></a></p>');
+              });
+            }
+            console.log("EXTRACTION COMPLETED");
+            $("#totalOFD").html("Extraction Completed. Total Drivers:."+ response.driverCount);
+              setTimeout(() => {
+                $("#totalOFD").html(totalOFD);
+              }, 7000);
+            console.log(response);
+          }else{
+            console.log("EXTRACTION FAILED");
+            $("#totalOFD").html("Extraction Failed: " + response.message);
+              setTimeout(() => {
+                $("#totalOFD").html(totalOFD);
+              }, 7000);
+            console.log(response);
+            
+            if(response.err === "EXTRACTION_IN_PROGRESS"){
+              $('#infoDialogDetails').html('<p>Extraction Request Bounced. </p>');
+              $('#infoDialogDetails').append('<p>'+response?.message+'</p>');
+              // $('#infoDialogDetails').append('<p> <a onclick="refreshPage()"> Reload <i class="bi bi-arrow-clockwise"></i></a></p>');
+            }
+          }
+        })   
+  }catch (error) {
     console.log("Encountered an Error Extracting mails");
     console.log(error);
     console.log(error.status);
-    if(error.status == 0){
-      $("#totalOFD").html("Email Extraction Server isnt running. Try again after starting it.");
-          setTimeout(() => {
-          $("#totalOFD").html(totalOFD);
-      }, 7000);
-    }else if(error.status == 200){
-      $("#totalOFD").html("Email Extraction Completed.");
-          setTimeout(() => {
-          $("#totalOFD").html(totalOFD);
-      }, 7000);
-    }
+    await $.post(domain + "/checkExtractionStatus/" + selectedExtractionDateTime, async function(done){
+      if(done){
+            if(error.status == 0){
+          $("#totalOFD").html("Email Extraction Server isnt running. Try again after starting it.");
+              setTimeout(() => {
+              $("#totalOFD").html(totalOFD);
+          }, 7000);
+        }else if(error.status == 200){
+          $("#totalOFD").html("Email Extraction Completed.");
+              setTimeout(() => {
+              $("#totalOFD").html(totalOFD);
+          }, 7000);
+        }
+      }else{
+        $('#infoDialogDetails').html('<p>Extraction is taking a little longer but is In Progress. </p>');
+        $('#infoDialogDetails').append('<p> Continue to hold on and click "Check Status" in another 2mins</p>');
+        $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
+      }
+    })
     
   }
   $("#pullRequestButton").removeClass("disabled");
@@ -2038,11 +2067,20 @@ async function extractMail(opts){
   $("#pullRequestButton").html('Pull Report');
 }
 
+
 async function deleteDR(){
   console.log("selected Date to Delete: ", selectedReportDateTime);
   const enteredPassword = await prompt('Enter SuperAdmin Password:');
   console.log(enteredPassword);
   deleteReport({deleteDateTime:selectedReportDateTime, password:enteredPassword});
+}
+
+async function checkAndUpdateExtractionStatus(){
+  await $.get(domain + "/checkExtractionStatus/:0", function(done) {
+    $('#infoDialogDetails').html('<p>Extraction is In Progress. </p>');
+    $('#infoDialogDetails').append('<p> Continue to hold on and click "Check Status" in another 2mins</p>');
+    $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
+  });
 }
 
 
@@ -2320,6 +2358,10 @@ function compareDates(t, d) {
     }
   }
   return comparison;
+}
+
+function refreshPage(){
+  location.reload();
 }
 
 async function setAvailableWeeks(){

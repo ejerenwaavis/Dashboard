@@ -397,6 +397,19 @@ const WeeklyReport = reportConn.model("WeeklyReport", weeklyReportSchema);
 var weeklyReport;
 
 
+
+const statusSchema = new mongoose.Schema({
+    operation: String, // driverNumber-date
+    date: {type:Date, default: new Date().setHours(0,0,0,0)},
+    done: {type:Boolean, default:false},
+    startedBy: {type:String, default:""}, 
+    lastUpdated: {type:Date, default: new Date()},
+});
+const Status = reportConn.model("Status", statusSchema);
+var statusReport;
+
+
+
 /***********************BUSINESS LOGIC ************************************/
 
 app.route(APP_DIRECTORY + "/")
@@ -638,8 +651,7 @@ app.route(APP_DIRECTORY + "/deleteAccess")
 
 app.route(APP_DIRECTORY + "/extractReport")
   .get(async function (req, res) {
-    let url = 'https://triumphcourier.com/mailreader/extract';
-    
+    let url = EXTRACTINGURL;//'https://triumphcourier.com/mailreader/extract';
     https.get(url, function(response) {
       response.on("data", function(data) {
         console.log(data);
@@ -647,6 +659,24 @@ app.route(APP_DIRECTORY + "/extractReport")
       });
     });
 })
+
+app.route(APP_DIRECTORY + "/checkExtractionStatus/:date")
+  .get(async function(req,res) {
+    let date = (new Date()).setHours(0,0,0,0);
+    if(req.params.date){
+      let paramDate = Number(req.params.date);
+      if(paramDate)
+      date = new Date(paramDate)
+    }
+    console.log(date);
+    await Status.findOne({operation:"EMAIL_READER", date:(new Date(date).setHours(0,0,0,0))}).then(async function (foundStatus) {
+      if(!foundStatus){
+          res.send(true);
+        }else{
+          res.send(foundStatus.done);
+        }
+      })
+  })
 
 app.route(APP_DIRECTORY + "/saveDriverStatus")
   .post(async function (req, res) {
@@ -2079,7 +2109,10 @@ const priorityBrands = [
   { trackingPrefixes : [], name : 'PAYCHEX'}, 
   { trackingPrefixes : [], name : 'ADP'}, 
   { trackingPrefixes : [], name : 'eGourmet Solutions Inc.'}, 
+  { trackingPrefixes : [], name : 'THE PURPLE CARROT'}, 
+  { trackingPrefixes : [], name : 'THRIVE MARKET'}, 
 ]
+
 
 
 contractors = [
@@ -2185,4 +2218,7 @@ contractors = [
   { driverNumber : '279195', name : 'Reginald SMITH'},
   { driverNumber : '280413', name : 'Ninozka ZABALA'},
   { driverNumber : '280445', name : 'Danny PRIESTER'},
+  { driverNumber : '281963', name : 'Garion SLAYTON'},
+  { driverNumber : '282304', name : 'Gabriela Bellorin VILLARROEL'},
+  { driverNumber : '283000', name : 'Roxana FINOL DEPABLOS'},
 ]
