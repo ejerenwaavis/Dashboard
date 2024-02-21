@@ -28,7 +28,7 @@ window.onload = async (event) => {
   update = await pullLocalReport();
 };
 
-
+let sideBarMenu = $("#sidebarMenu");
 
 async function pullReport() {
   stopReportPull = false;
@@ -2199,6 +2199,15 @@ async function prepareWeeklyReportInterface(){
   $("#weeklyReportMsg").show();
   await setAvailableWeeks();
   await stagePulling();
+  if(sideBarMenu.hasClass("show")){
+    sideBarMenu.toggleClass("show")
+  }
+}
+
+async function prepareDeliveryReportInterface() {
+  if(sideBarMenu.hasClass("show")){
+    sideBarMenu.toggleClass("show")
+  }
 }
 
 async function prepareMLSReportnterface(){
@@ -2266,6 +2275,9 @@ async function prepareMLSReportnterface(){
   }
   $("#pullMLSReportButton").removeClass("disabled");
   $("#pullMLSReportButton").html('Load MLS Report');
+  if(sideBarMenu.hasClass("show")){
+    sideBarMenu.toggleClass("show")
+  }
 }
 
 
