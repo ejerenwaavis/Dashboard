@@ -786,6 +786,17 @@ async function sortBy(evt){
           }
       });
       break;
+    case "driverNumber":
+      await clientDeiverStatus.sort(function (a,b){
+          if (a.driverNumber > b.driverNumber) {
+              return 1;   
+          }else if (a.driverNumber < b.driverNumber){
+              return -1;
+          }else{
+              return 0;
+          }
+      });
+      break;
     case "load":
       await clientDeiverStatus.sort(function (a,b){
         if ( (a.manifest.ofd.length + a.manifest.del.length + a.manifest.attempts.length) > (b.manifest.ofd.length + b.manifest.del.length + b.manifest.attempts.length)) {
@@ -2207,21 +2218,21 @@ async function prepareMLSReportnterface(){
                         + driver.driverNumber + ' - <b> &nbsp;' + driver.driverName + ' - ' + stopArray.length + '</b>'
                         +'</button>'
                         +'</h2>'
-                        +'<div id="'+driverCollapseID+'" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">'
+                        +'<div id="'+driverCollapseID+'" class="accordion-collapse collapse" data-bs-parent="#accordionExample">'
                         +'<div class="accordion-body">';
                     
         let tableHead = '<div class="table-responsive">'
             +'<table id="'+tableID+'" class="table table-hover">'
             +'<thead>'
             +'<tr>'
-            +'<td><span class=" " data="barcode" onclick="mlsSortBy(this)">BARCODE</span></td>'
-            +'<td><span class=" " data="brand" onclick="mlsSortBy(this)"'+tableID+'")">BRAND</span></td>'
-            +'<td><span class=" " data="name" onclick="mlsSortBy(this)">NAME</span></td>'
-            +'<td><span class=" " data="street" onclick="mlsSortBy(this)">STREET</span></td>'
-            +'<td><span class=" " data="city" onclick="mlsSortBy(this)">CITY</span></td>'
-            +'<td><span class=" " data="state" onclick="mlsSortBy(this)">STATE</span></td>'
-            +'<td><span class=" " data="status" onclick="mlsSortBy(this)">STATUS</span></td>'
-            +'<td><span class=" " data="event" onclick="mlsSortBy(this)">LAST EVENT</span></td>'
+            +'<td><span class=" " data="barcode" >BARCODE</span></td>'
+            +'<td><span class=" " data="brand" >BRAND</span></td>'
+            +'<td><span class=" " data="name" >NAME</span></td>'
+            +'<td><span class=" " data="street" >STREET</span></td>'
+            +'<td><span class=" " data="city" >CITY</span></td>'
+            +'<td><span class=" " data="state" >STATE</span></td>'
+            +'<td><span class=" " data="status" >STATUS</span></td>'
+            +'<td><span class=" " data="event" >LAST EVENT</span></td>'
             +'</tr>'
             +'</thead>'
             +'<tbody >';
