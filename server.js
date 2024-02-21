@@ -505,7 +505,7 @@ app.route(APP_DIRECTORY + "/googleLoggedin")
           return next(err);
         }
         // Redirect if it succeeds
-        return res.redirect(APP_DIRECTORY + '/');
+        return res.render(APP_DIRECTORY + '/');
       });
     })(req, res, next);
   })
@@ -524,7 +524,14 @@ app.route(APP_DIRECTORY + "/googleLoggedin")
               });
             }
             // Redirect if it succeeds
-            return res.redirect(APP_DIRECTORY + '/');
+            if(user.isProUser){
+              return res.redirect(APP_DIRECTORY + '/');
+            }else{
+              return res.render('login', {
+                body: new Body("Login", "Unauthorized Access, Admin Priviledges are required to access the Dashboard", ""),
+                user: null,
+              });
+            }
           });
         }else{
           console.error("No Such User");
