@@ -17,9 +17,9 @@
                 <button onclick="pullReport()" id="pullRequestButton" class="btn btn-sm btn-secondary disabled">Pull Reports</button>
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item btn" onclick="stopPullingProcess()">Stop Report Pull</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item btn" id="extractMailButton" onclick="extractMail()">Extract Manifests</a></li>
                     <%if(user.isSuperAdmin){%>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item btn" id="extractMailButton" onclick="extractMail()">Extract Manifests</a></li>
                         <li><a class="dropdown-item btn" onclick="updateWeeklyReport()">Update WR</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item btn" id="extractPastManifestButton" data-bs-toggle="modal" data-bs-target="#extractPastManifestDatePicker" onclick="showDateModal()">Extract Past Manifest</a></li>
