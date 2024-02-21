@@ -2023,7 +2023,7 @@ async function extractMail(opts){
               $('#infoDialogDetails').append('<b>Errors</b>')
               response.errors.forEach(element => {
                 $('#infoDialogDetails').append('<p>Sender: '+element?.sender+' | Msg: '+element?.message+'</p>')
-                $('#infoDialogDetails').append('<p> <a onclick="refreshPage()"> Reload <i class="bi bi-arrow-clockwise"></i></a></p>');
+                $('#infoDialogDetails').append('<p> <a class="btn btn-outline-accent" onclick="refreshPage()"> Reload <i class="bi bi-arrow-clockwise"></i></a></p>');
               });
             }
             console.log("EXTRACTION COMPLETED");
