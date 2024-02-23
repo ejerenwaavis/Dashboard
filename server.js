@@ -984,7 +984,11 @@ app.route(APP_DIRECTORY + "/deleteDriverReport/:date/:deletePassword")
 
 app.route(APP_DIRECTORY + "/getWeeklyReport/:date")
   .get(async function (req, res) {
-    date = (new Date(Number(req.params.date)));
+    let selectedDate = Number(req.params.date);
+    if(isNaN(selectedDate)){
+      selectedDate = new Date();
+    }
+    date = selectedDate;
     let startDate = (await getWeekDates(date))[0];
     // console.log(startDate);
     try {
