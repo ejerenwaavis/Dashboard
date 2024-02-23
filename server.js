@@ -813,13 +813,15 @@ app.route(APP_DIRECTORY + "/getDriverReport/:date")
     let param = Number(req.params.date);
     let date = (new Date(param)).setHours(0,0,0,0);
     let errors = [];
-    console.error("getting REport based on specific date ", date);
+    console.error(outputDate()  , " getting REport based on specific date ", date);
     // console.log(param);
     // console.log(date);
     if(param){
       let report = await DriverReport.find({date:date},'-__v'); //this is the origianl report flow. 
       // let report = await DevDriverReport.find({date:date},'-__v');
+
       if(report.length){
+        console.error(outputDate(), " Search for report data completed ")
         res.send(report);
       }else{
         // console.log('atempting to find past report in Development DB');
