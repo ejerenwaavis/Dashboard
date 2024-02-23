@@ -991,7 +991,7 @@ app.route(APP_DIRECTORY + "/getWeeklyReport/:date")
     console.error("selectedDate: ", selectedDate);
     date = selectedDate;
     let startDate = (await getWeekDates(date))[0];
-    // console.log(startDate);
+    console.error("Final StartDAte: ",startDate);
     try {
       let report = await WeeklyReport.findOne({startDate:startDate},'-__v');
       if(report){
