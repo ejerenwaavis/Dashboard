@@ -988,6 +988,7 @@ app.route(APP_DIRECTORY + "/getWeeklyReport/:date")
     if(isNaN(selectedDate)){
       selectedDate = new Date();
     }
+    console.error("selectedDate: ", selectedDate);
     date = selectedDate;
     let startDate = (await getWeekDates(date))[0];
     // console.log(startDate);
