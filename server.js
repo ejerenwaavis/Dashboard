@@ -750,10 +750,12 @@ app.route(APP_DIRECTORY + "/getReport")
 
 app.route(APP_DIRECTORY + "/getDriverReport")
   .get(async function (req, res) {
+    
     let errors = [];
     let today = await getToday();
     // yesterday = new Date(today).setDate(3); // Remove before publshing - Fetches the previous days report
     // today = yesterday; // Remove before publshing - Fetches the previous days report
+    console.error("getting Todays Report Automatically ", today);
     let report = await DriverReport.find({date:today},'-__v');
     
     // Disbaled Searching for Report In DevDB
@@ -811,6 +813,7 @@ app.route(APP_DIRECTORY + "/getDriverReport/:date")
     let param = Number(req.params.date);
     let date = (new Date(param)).setHours(0,0,0,0);
     let errors = [];
+    console.error("getting REport based on specific date ", date);
     // console.log(param);
     // console.log(date);
     if(param){
