@@ -365,8 +365,8 @@ var devDriverReports;
 
 const weeklyReportSchema = new mongoose.Schema({
     _id: String, // StartDate-EndDate
-    startDate: {type:Date, default:null},
-    endDate: {type:Date, default:null},
+    startDate: {type:Date},
+    endDate: {type:Date},
     drivers:[{
         driverNumber: Number,
         driverName: String,
