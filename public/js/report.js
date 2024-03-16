@@ -1495,12 +1495,16 @@ async function alternativeTrack(trackingNumber){
 
 
 async function isPriority(stop) {
-  if(priorityBrands !=null){
-    result = await priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
-    return result;
+  if(stop?.isPriority){
+    return true;    
   }else{
-    console.log("Unable to Check for Priority");
-    return false;
+    if(priorityBrands !=null){
+      result = await priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
+      return result;
+    }else{
+      console.log("Unable to Check for Priority");
+      return false;
+    }
   }
 }
 
