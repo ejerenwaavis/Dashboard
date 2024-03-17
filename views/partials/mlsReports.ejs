@@ -2,7 +2,7 @@
     <div class="container-fluid px-0">
         <div class="d-flex justify-content-between align-items-end">
             <div class="py-2">
-                <h6 class="placard-title fw-bold text-mute col d-inline">MLS Reports</h6>
+                <h6 class="placard-title fw-bold text-mute col d-inline">MLS Reports <span id="mls-total"> </span></h6>
             </div>
             
             <div  class="py-2 btn-group-sm" role="group" >
@@ -14,9 +14,20 @@
                 <label class="btn btn-secondary" data="name" onclick="sortBy(this)" for="option2">Name</label>
              
             </div>
-            <div  class="py-2 btn-group" role="group" >
-                <button onclick="prepareMLSReportnterface()" id="pullMLSReportButton" class="btn btn-sm btn-secondary disabled">Load MLS Report</button>                   
+            <div class="py-2 btn-group" role="group">
+                <button onclick="prepareMLSReportnterface()" id="pullMLSReportButton" class="btn btn-sm btn-secondary disabled">Load MLS
+                    Report</button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item btn" id="extractMailButton" onclick="extractMail()">Extract Manifests</a></li>
+                </ul>
+                <button type="button" role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                    class="btn btn-sm btn-outline-secondary">
+                    <span class=""><i class="bi bi-three-dots-vertical"></i></span>
+                </button>
             </div>
+            <!-- <div  class="py-2 btn-group" role="group" >
+                <button onclick="prepareMLSReportnterface()" id="pullMLSReportButton" class="btn btn-sm btn-secondary disabled">Load MLS Report</button>                   
+            </div> -->
         </div>
     </div>
     <div class="placard p-3 rounded shadow">
