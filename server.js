@@ -133,7 +133,6 @@ const userSchema = new mongoose.Schema({
   },
   email: { type: String, default: "" },
   approvalNotes:[{description:String, adminEmail: { type: String, default: "" }, adminUsername:String, date:Date}],
-  verified: { type: Boolean, default: false },
   isProUser: { type: Boolean, default: false },
   isSuperAdmin: { type: Boolean, default: false },
   renews: { type: Date, default: new Date() },
@@ -756,15 +755,13 @@ app.route(APP_DIRECTORY + "/getDriverReport")
     // yesterday = new Date(today).setDate(3); // Remove before publshing - Fetches the previous days report
     // today = yesterday; // Remove before publshing - Fetches the previous days report
     console.error("getting Todays Report Automatically ", today);
+    
+    //Uncoment the large commment to resume functionallity
+    console.log("in development mode, sending empty report");
+    res.send([]);
+    /*
     let report = await DriverReport.find({date:today},'-__v');
     
-    // Disbaled Searching for Report In DevDB
-    /*
-    if(!report.length){
-      console.log("trying DEV Database");
-      report = await DevDriverReport.find({date:today},'-__v');
-    }
-    */
 
     if(report.length){
       res.send(report);
@@ -792,6 +789,7 @@ app.route(APP_DIRECTORY + "/getDriverReport")
         res.send({error:"", msg:"Found Nothing, check old database"});
       }
     }
+    */
 })
 
 app.route(APP_DIRECTORY + "/getReport/:date")
@@ -985,7 +983,11 @@ app.route(APP_DIRECTORY + "/deleteDriverReport/:date/:deletePassword")
 })
 
 
-/**** Weekly Reports ****/ 
+
+
+
+
+/********** Weekly Reports *************/ 
 
 app.route(APP_DIRECTORY + "/getWeeklyReport/:date")
   .get(async function (req, res) {
@@ -1142,6 +1144,34 @@ app.route(APP_DIRECTORY + "/updateWeeklyReport")
     }
 
 })
+
+
+
+
+
+
+
+/****************** EMPLOYEE SECTION ***************** */
+app.route(APP_DIRECTORY + "/getUsers")
+  .get(async function (req, res) {
+    if(req.isAuthenticated && req.user){
+      if(req.user?.isProUser){
+          let users = await User.find({},'-__v');
+          console.log("Found ", users?.length, " users");
+          res.send(users);
+      }else{
+        res.send({err:"ACCESS_DENIED", msg:"Admin Priviledge Required"})
+      }
+    }else{
+      res.redirect(APP_DIRECTORY + "/login")
+    }
+})
+
+
+
+
+
+
 
 
 
