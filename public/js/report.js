@@ -2027,8 +2027,8 @@ async function extractMail(opts){
               $('#infoDialogDetails').append('<b>Errors</b>')
               response.errors.forEach(element => {
                 $('#infoDialogDetails').append('<p>Sender: '+element?.sender+' | Msg: '+element?.message+'</p>')
-                $('#infoDialogDetails').append('<p> <a class="btn btn-outline-accent" onclick="refreshPage()"> Reload <i class="bi bi-arrow-clockwise"></i></a></p>');
               });
+              $('#infoDialogDetails').append('<p> <a class="btn btn-outline-accent" onclick="refreshPage()"> Reload <i class="bi bi-arrow-clockwise"></i></a></p>');
             }
             console.log("EXTRACTION COMPLETED");
             $("#totalOFD").html("Extraction Completed. Total Drivers:."+ response.driverCount);
@@ -2048,6 +2048,13 @@ async function extractMail(opts){
               $('#infoDialogDetails').html('<p>Extraction Request Bounced. </p>');
               $('#infoDialogDetails').append('<p>'+response?.message+'</p>');
               // $('#infoDialogDetails').append('<p> <a onclick="refreshPage()"> Reload <i class="bi bi-arrow-clockwise"></i></a></p>');
+            }else if(response.message === "No Emails Sent"){
+              $('#infoDialogDetails').html('<p>No Emails Found for todays Extraction. </p>');
+              $('#infoDialogDetails').append('<p>'+response?.message+'</p>');
+              // $('#infoDialogDetails').append('<p> <a onclick="refreshPage()"> Reload <i class="bi bi-arrow-clockwise"></i></a></p>');
+            }else{
+              $('#infoDialogDetails').html('<p>Manifest is Still being extreacted, refresh the page in about 2 mins. </p>');
+              $('#infoDialogDetails').append('<p>'+response?.message+'</p>');
             }
           }
         })   
@@ -2055,25 +2062,16 @@ async function extractMail(opts){
     console.log("Encountered an Error Extracting mails");
     console.log(error);
     console.log(error.status);
-    await $.post(domain + "/checkExtractionStatus/" + selectedExtractionDateTime, async function(done){
-      if(done){
-            if(error.status == 0){
-          $("#totalOFD").html("Email Extraction Server isnt running. Try again after starting it.");
-              setTimeout(() => {
-              $("#totalOFD").html(totalOFD);
-          }, 7000);
-        }else if(error.status == 200){
-          $("#totalOFD").html("Email Extraction Completed.");
-              setTimeout(() => {
-              $("#totalOFD").html(totalOFD);
-          }, 7000);
-        }
-      }else{
-        $('#infoDialogDetails').html('<p>Extraction is taking a little longer but is In Progress. </p>');
-        $('#infoDialogDetails').append('<p> Continue to hold on and click "Check Status" in another 2mins</p>');
-        $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
-      }
-    })
+    if(error.status == 0){
+      $('#infoDialogDetails').html('<p>Extraction is taking a little longer but is In Progress. </p>');
+      $('#infoDialogDetails').append('<p> Continue to hold on and click "Check Status" in another 2 mins</p>');
+      $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
+    }else{
+      $('#infoDialogDetails').html('<p>Encountered the folllowing error(s). </p>');
+      $('#infoDialogDetails').append('<p> '+ JSON.stringify(error) +'</p>');
+      
+    }
+  
     
   }
   $("#pullRequestButton").removeClass("disabled");
@@ -2091,11 +2089,23 @@ async function deleteDR(){
 }
 
 async function checkAndUpdateExtractionStatus(){
-  await $.get(domain + "/checkExtractionStatus/:0", function(done) {
-    $('#infoDialogDetails').html('<p>Extraction is In Progress. </p>');
-    $('#infoDialogDetails').append('<p> Continue to hold on and click "Check Status" in another 2mins</p>');
-    $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
-  });
+  try {
+    await $.get(domain + "/checkExtractionStatus/:0", function(done) {
+      if(!done){
+          $('#infoDialogDetails').html('<p>Extraction is In Progress. </p>');
+          $('#infoDialogDetails').append('<p> Continue to hold on and click "Check Status" in another 2mins</p>');
+          $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
+      }else{
+        $('#infoDialogDetails').html('<p>Failed to check for extration status</p>');
+        $('#infoDialogDetails').append('<p> Continue to hold on and click "Check Status" in another <b>2 mins</b></p>');
+        $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
+      }
+    });
+  } catch (error) {
+        $('#infoDialogDetails').html('<p>Encountered an error checking extraction status</p>');
+        $('#infoDialogDetails').append('<p> Try Extracting again</p>');
+        // $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');  
+  }
 }
 
 
@@ -2215,12 +2225,15 @@ async function prepareDeliveryReportInterface() {
 }
 
 async function prepareMLSReportnterface(){
+  let mlsTotal = 0;
   $("#pullMLSReportButton").addClass("disabled");
   $("#pullMLSReportButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="mls-process-status" role="status">Preping MLS Report...</span></span>');
   $('#mlsReportBody').empty();
   if(clientDeiverStatus.length){
     for await(driver of clientDeiverStatus){
       stopArray = [...driver.manifest.pmls,...driver.manifest.mls,...driver.manifest.problemStops];
+      mlsTotal += stopArray.length;
+      $("#mls-total").text(" | "+mlsTotal);
       if(stopArray.length){
         let tableID = driver.driverNumber+'-mlsDetails';
         let driverCollapseID = driver.driverNumber+'-collapse';
@@ -2259,7 +2272,7 @@ async function prepareMLSReportnterface(){
 
         for await (const stop of stopArray){
           let stopAddress = stop.brand + " - " + stop.street + " " + stop.city
-          let tableBody = '<tr onclick="displayConfirmationDialog(this)" driverID="'+driver._id+'" barcode="'+stop.barcode+'" stopAddress="'+stopAddress+'" class="table-bordered">';
+          let tableBody = '<tr class="table-bordered">';
           let barcodeColor = (await (isPriority(stop))) ? "link-danger" : "link-secondary";  
           tableBody += '<td> <a class="'+barcodeColor+' link-offset-2" href="https://triumphcourier.com/barcodetool/track/'+(stop.barcode)+'" target="_blank">'+(stop.barcode)+' <i class="bi bi-search"></i></a></td>';
           tableBody += '<td> '+ stop.brand +'</td>';
@@ -2267,7 +2280,7 @@ async function prepareMLSReportnterface(){
           tableBody += '<td>'+ stop.street +'</td>';
           tableBody += '<td> '+ stop.city +'</td>';
           tableBody += '<td> '+ stop.state +'</td>';
-          tableBody += '<td> '+ ((stop.Events? stop.Events[0].Status : null) ?? stop.lastScan) + '</td>';
+          tableBody += '<td> <span onclick="displayConfirmationDialog(this)" driverID="'+driver._id+'" barcode="'+stop.barcode+'" stopAddress="'+stopAddress+'"  class="btn btn-sm btn-outline-accent">'+ ((stop.Events? stop.Events[0].Status : null) ?? stop.lastScan) + '</span> </td>';
           tableBody += '<td>'+ (new Date((stop.Events? stop.Events[0].UtcEventDateTime : false) ?? driver.date).toLocaleString()) + '</td>';
           tableBody += "</tr>";
           $('#'+tableID+' tbody').append(tableBody);
