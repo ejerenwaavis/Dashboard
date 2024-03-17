@@ -17,9 +17,9 @@
                 <button onclick="pullReport()" id="pullRequestButton" class="btn btn-sm btn-secondary disabled">Pull Reports</button>
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item btn" onclick="stopPullingProcess()">Stop Report Pull</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item btn" id="extractMailButton" onclick="extractMail()">Extract Manifests</a></li>
                     <%if(user.isSuperAdmin){%>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item btn" id="extractMailButton" onclick="extractMail()">Extract Manifests</a></li>
                         <li><a class="dropdown-item btn" onclick="updateWeeklyReport()">Update WR</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item btn" id="extractPastManifestButton" data-bs-toggle="modal" data-bs-target="#extractPastManifestDatePicker" onclick="showDateModal()">Extract Past Manifest</a></li>
@@ -69,7 +69,7 @@
             <table id="reportDetails" class="table table-hover">
                 <thead>
                     <tr>
-                        <td>IC #</td>
+                        <td > <span class=" " data="driverNumber" onclick="sortBy(this)">IC #</span></td>
                         <td><span class=" " data="name" onclick="sortBy(this)">NAME</span></td>
                         <td><span class=" " data="load" onclick="sortBy(this)">LOAD</span></td>
                         <td><span class=" " data="ofd" onclick="sortBy(this)">OFD</span></td>
@@ -182,6 +182,29 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-accent" data-bs-dismiss="modal" onclick="extractPastManifest()">Extract Past Manifest</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="infoDialog" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="infoDialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="infoDialogTittle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center" id="">
+                        <div class="container-fluid" id="infoDialogDetails">
+                        </div>
+                    </div>
+                </div>
+                <!-- <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-accent" id="switchLoadButton"
+                        onclick="switchLoad()">Confirm</button>
+                </div> -->
             </div>
         </div>
     </div>

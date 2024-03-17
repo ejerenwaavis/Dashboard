@@ -25,6 +25,7 @@ const DELETE_PASSWORD = process.env.DELETE_PASSWORD;
 // const axios = require('axios');
 
 const TRACKINGURL = process.env.TRACKINGURL;
+const EXTRACTINGURL = process.env.EXTRACTINGURL ?? 'http://localhost:3055/extract/';
 const LSTRACKINGURL = process.env.LSTRACKINGURL;
 
 
@@ -364,8 +365,8 @@ var devDriverReports;
 
 const weeklyReportSchema = new mongoose.Schema({
     _id: String, // StartDate-EndDate
-    startDate: {type:Date, default:null},
-    endDate: {type:Date, default:null},
+    startDate: {type:Date},
+    endDate: {type:Date},
     drivers:[{
         driverNumber: Number,
         driverName: String,
@@ -394,6 +395,19 @@ const weeklyReportSchema = new mongoose.Schema({
 });
 const WeeklyReport = reportConn.model("WeeklyReport", weeklyReportSchema);
 var weeklyReport;
+
+
+
+const statusSchema = new mongoose.Schema({
+    operation: String, // driverNumber-date
+    date: {type:Date, default: new Date().setHours(0,0,0,0)},
+    done: {type:Boolean, default:false},
+    startedBy: {type:String, default:""}, 
+    lastUpdated: {type:Date, default: new Date()},
+});
+const Status = reportConn.model("Status", statusSchema);
+var statusReport;
+
 
 
 /***********************BUSINESS LOGIC ************************************/
@@ -491,7 +505,7 @@ app.route(APP_DIRECTORY + "/googleLoggedin")
           return next(err);
         }
         // Redirect if it succeeds
-        return res.redirect(APP_DIRECTORY + '/');
+        return res.render(APP_DIRECTORY + '/');
       });
     })(req, res, next);
   })
@@ -510,7 +524,14 @@ app.route(APP_DIRECTORY + "/googleLoggedin")
               });
             }
             // Redirect if it succeeds
-            return res.redirect(APP_DIRECTORY + '/');
+            if(user.isProUser){
+              return res.redirect(APP_DIRECTORY + '/');
+            }else{
+              return res.render('login', {
+                body: new Body("Login", "Unauthorized Access, Admin Priviledges are required to access the Dashboard", ""),
+                user: null,
+              });
+            }
           });
         }else{
           console.error("No Such User");
@@ -637,8 +658,7 @@ app.route(APP_DIRECTORY + "/deleteAccess")
 
 app.route(APP_DIRECTORY + "/extractReport")
   .get(async function (req, res) {
-    let url = 'https://triumphcourier.com/mailreader/extract';
-    
+    let url = EXTRACTINGURL;//'https://triumphcourier.com/mailreader/extract';
     https.get(url, function(response) {
       response.on("data", function(data) {
         console.log(data);
@@ -646,6 +666,24 @@ app.route(APP_DIRECTORY + "/extractReport")
       });
     });
 })
+
+app.route(APP_DIRECTORY + "/checkExtractionStatus/:date")
+  .get(async function(req,res) {
+    let date = (new Date()).setHours(0,0,0,0);
+    if(req.params.date){
+      let paramDate = Number(req.params.date);
+      if(paramDate)
+      date = new Date(paramDate)
+    }
+    console.log(date);
+    await Status.findOne({operation:"EMAIL_READER", date:(new Date(date).setHours(0,0,0,0))}).then(async function (foundStatus) {
+      if(!foundStatus){
+          res.send(true);
+        }else{
+          res.send(foundStatus.done);
+        }
+      })
+  })
 
 app.route(APP_DIRECTORY + "/saveDriverStatus")
   .post(async function (req, res) {
@@ -693,6 +731,8 @@ app.route(APP_DIRECTORY + "/saveDriverStatus")
             res.send({successfull:false, msg:"Save Incomplete"})
           }
         }catch(err){
+          console.error("Failed to perform save: "+driver.driverName);
+          console.error(err);
           res.send({successfull:false, error:err, msg:"Failed to perform save: "+driver.driverName})
         }
       }else{
@@ -710,10 +750,12 @@ app.route(APP_DIRECTORY + "/getReport")
 
 app.route(APP_DIRECTORY + "/getDriverReport")
   .get(async function (req, res) {
+    
     let errors = [];
     let today = await getToday();
     // yesterday = new Date(today).setDate(3); // Remove before publshing - Fetches the previous days report
     // today = yesterday; // Remove before publshing - Fetches the previous days report
+    console.error("getting Todays Report Automatically ", today);
     let report = await DriverReport.find({date:today},'-__v');
     
     // Disbaled Searching for Report In DevDB
@@ -771,12 +813,15 @@ app.route(APP_DIRECTORY + "/getDriverReport/:date")
     let param = Number(req.params.date);
     let date = (new Date(param)).setHours(0,0,0,0);
     let errors = [];
+    console.error(outputDate()  , " getting REport based on specific date ", date);
     // console.log(param);
     // console.log(date);
     if(param){
       let report = await DriverReport.find({date:date},'-__v'); //this is the origianl report flow. 
       // let report = await DevDriverReport.find({date:date},'-__v');
+
       if(report.length){
+        console.error(outputDate(), " Search for report data completed ")
         res.send(report);
       }else{
         // console.log('atempting to find past report in Development DB');
@@ -858,6 +903,54 @@ app.route(APP_DIRECTORY + "/getSingleDriverReport")
 });
 
 
+app.route(APP_DIRECTORY + "/switchLoadStatus")
+  .post(async function (req, res) {
+    if(req.user){
+      if(req.user.isProUser){
+        let documentID = (req.body.documentID);
+        let barcode = (req.body.barcode);
+        let errors = [];
+        // console.log(req.body);
+        
+          try {
+            // Retrieve the MongoDB document by ID
+            let report = await DriverReport.findOne({_id:documentID});
+            // console.log(report);
+
+            // Find the array item by ID
+            const arrayItemIndex = report.manifest.findIndex(stop => stop.barcode === barcode);
+            
+            // console.log("\n\n");
+            // console.log(arrayItemIndex);
+            // console.log(report.manifest[arrayItemIndex]);
+            if (arrayItemIndex !== -1) {
+                // Update the property value
+                report.manifest[arrayItemIndex].lastScan = 'Loaded';
+                
+                // Save the updated document
+                await report.save();
+                console.log('Document updated successfully.');
+                res.send({successfull:true, err:"", msg:"Document updated successfully."});
+            } else {
+              console.log('Array item not found.');
+              res.send({successfull:false, err:"Stop Not Found On Driver Manifest", msg:""});
+            }
+          } catch (error) {
+              console.error('Error updating document:', error);
+              res.send({successfull:false, err:"Error on Server Operation [ "+error+" ]", msg:""});
+          }
+          
+        
+      }else{
+          res.send({successfull:false, err:"Admin Priviledge Needed for action", msg:""});
+      }
+    }else{
+          res.send({successfull:false, err:"Unrecognised User", msg:""});
+    }
+});
+
+
+
 /**** Deleting Reports **********/
 app.route(APP_DIRECTORY + "/deleteDriverReport/:date/:deletePassword")
   .get(async function (req, res) {
@@ -896,9 +989,14 @@ app.route(APP_DIRECTORY + "/deleteDriverReport/:date/:deletePassword")
 
 app.route(APP_DIRECTORY + "/getWeeklyReport/:date")
   .get(async function (req, res) {
-    date = (new Date(Number(req.params.date)));
+    let selectedDate = Number(req.params.date);
+    if(isNaN(selectedDate)){
+      selectedDate = new Date();
+    }
+    console.error("selectedDate: ", selectedDate);
+    date = selectedDate;
     let startDate = (await getWeekDates(date))[0];
-    // console.log(startDate);
+    console.error("Final StartDAte: ",startDate);
     try {
       let report = await WeeklyReport.findOne({startDate:startDate},'-__v');
       if(report){
@@ -1069,6 +1167,20 @@ app.route(APP_DIRECTORY + "/getLSURL")
     // (req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| 
     if((req.isAuthenticated && req.hostname.includes("triumphcourier.com")) || DEVELOPEMENT){
       res.send(""+LSTRACKINGURL+"");
+    }else{
+      console.error("Tried to get Tracking URL from unauhtenticated/Unauthorized request");
+      res.send("unauthorized request")
+    }
+})
+
+app.route(APP_DIRECTORY + "/getExtractingURL")
+  .get(function (req, res) {
+    // console.error(outputDate() + " Hostname: "+req.hostname);
+    // console.error("Developement: " + DEVELOPEMENT);
+    // (req.isAuthenticated && req.hostname.includes("triumphcourier.com"))|| 
+    if((req.isAuthenticated && req.hostname.includes("triumphcourier.com")) || DEVELOPEMENT){
+      
+      res.send(""+EXTRACTINGURL+"");
     }else{
       console.error("Tried to get Tracking URL from unauhtenticated/Unauthorized request");
       res.send("unauthorized request")
@@ -2014,10 +2126,15 @@ const priorityBrands = [
   { trackingPrefixes : [], name : 'PAYCHEX'}, 
   { trackingPrefixes : [], name : 'ADP'}, 
   { trackingPrefixes : [], name : 'eGourmet Solutions Inc.'}, 
+  { trackingPrefixes : [], name : 'THE PURPLE CARROT'}, 
+  { trackingPrefixes : [], name : 'THRIVE MARKET'}, 
+  { trackingPrefixes : [], name : 'ADP (MC-Payroll)'}, 
+  { trackingPrefixes : [], name : 'Payroll (MC-Payroll)'}, 
 ]
 
 
-const contractors = [
+
+contractors = [
   { driverNumber : '203593', name : 'Frankie ROBINSON'},
   { driverNumber : '219029', name : 'Andreea OKONTA'},
   { driverNumber : '227410', name : 'Yacouba NABE'},
@@ -2111,4 +2228,16 @@ const contractors = [
   { driverNumber : '272612', name : 'Shiquita JAMES'},
   { driverNumber : '272883', name : 'Briana HARPER'},
   { driverNumber : '272950', name : 'Tiffany SWANSON'},
+  { driverNumber : '273294', name : 'Salena CARTER'},
+  { driverNumber : '273985', name : 'Diana PRIETO'},
+  { driverNumber : '275899', name : 'Kariela ANEZ ARAUJO'},
+  { driverNumber : '277229', name : 'Charles PARKS'},
+  { driverNumber : '277253', name : 'Claudancy COEUR'},
+  { driverNumber : '278482', name : 'Shekinah DAVIS'},
+  { driverNumber : '279195', name : 'Reginald SMITH'},
+  { driverNumber : '280413', name : 'Ninozka ZABALA'},
+  { driverNumber : '280445', name : 'Danny PRIESTER'},
+  { driverNumber : '281963', name : 'Garion SLAYTON'},
+  { driverNumber : '282304', name : 'Gabriela Bellorin VILLARROEL'},
+  { driverNumber : '283000', name : 'Roxana FINOL DEPABLOS'},
 ]

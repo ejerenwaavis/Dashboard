@@ -1,6 +1,7 @@
 let domain = $('#domain').attr('domain');
 let trackingResource = "";
 let trackingResource2 = "";
+let EXTRACTINGURL = "";
 let priorityBrands = null;
 let drivers = [];
 let clientDeiverStatus = [];
@@ -15,16 +16,19 @@ eventCodes.problemStops = [];
 let onloadReport = null;
 let totalOFD = NaN;
 let selectedReportDateTime = (new Date().setHours(0,0,0,0));
+let globalTimer = 0;
+let mouseIsDown = false;
 
 window.onload = async (event) => {
   $("#deliveryReport-nav-button").click(); //simulates the show action for the nav tabls
   trackingResource = await getTrackingURL();
   trackingResource2 = await getTrackingURL2();
+  EXTRACTINGURL = await getExtractingURL();
   priorityBrands = await getPriorityBrands();
   update = await pullLocalReport();
 };
 
-
+let sideBarMenu = $("#sidebarMenu");
 
 async function pullReport() {
   stopReportPull = false;
@@ -782,6 +786,17 @@ async function sortBy(evt){
           }
       });
       break;
+    case "driverNumber":
+      await clientDeiverStatus.sort(function (a,b){
+          if (a.driverNumber > b.driverNumber) {
+              return 1;   
+          }else if (a.driverNumber < b.driverNumber){
+              return -1;
+          }else{
+              return 0;
+          }
+      });
+      break;
     case "load":
       await clientDeiverStatus.sort(function (a,b){
         if ( (a.manifest.ofd.length + a.manifest.del.length + a.manifest.attempts.length) > (b.manifest.ofd.length + b.manifest.del.length + b.manifest.attempts.length)) {
@@ -1296,6 +1311,18 @@ function getTrackingURL() {
   });
 }
 
+function getExtractingURL(){
+  return new Promise((resolve, reject) => {
+    $.get(domain + '/getExtractingURL', function(data) {
+      // console.log('Tracking URL Acquired');
+      resolve(data);
+    }).fail(function(error) {
+      reject(error);
+    });
+  });
+}
+
+
 function getPriorityBrands() {
   return new Promise((resolve, reject) => {
     $.get(domain + '/getPriorityBrands', function(data) {
@@ -1468,12 +1495,16 @@ async function alternativeTrack(trackingNumber){
 
 
 async function isPriority(stop) {
-  if(priorityBrands !=null){
-    result = await priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
-    return result;
+  if(stop?.isPriority){
+    return true;    
   }else{
-    console.log("Unable to Check for Priority");
-    return false;
+    if(priorityBrands !=null){
+      result = await priorityBrands.some(p => (p.name).toLowerCase() == (stop.brand).toLowerCase());
+      return result;
+    }else{
+      console.log("Unable to Check for Priority");
+      return false;
+    }
   }
 }
 
@@ -1975,45 +2006,74 @@ async function extractMail(opts){
       selectedExtractionDateTime = opts.extractDateTime ? (new Date(Number(opts.extractDateTime)).setHours(0,0,0,0)) : 0; 
     }
   }
+
   $("#extractMailButton").addClass("disabled");
   $("#extractPastManifestButton").addClass("disabled");
   $("#pullRequestButton").addClass("disabled");
   $("#pullRequestButton").html('<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span id="" role="status"> <span id="report-process-status" role="status">Extracting Mails...</span></span>');
+  //********* activate modal here */
+  $('#infoDialogTittle').text('Extraction Status')
+  $('#infoDialogDetails').html('<div class="spinner-grow" role="status"><span class="visually-hidden">Loading...</span></div>')
+   const infoDialog = new bootstrap.Modal('#infoDialog', {
+    keyboard: true
+  })
+  infoDialog.show();
+
   try {
-    await $.get("http://localhost:3055/extract/"+selectedExtractionDateTime, function (response) {
-      if(response?.successfull){
-        console.log("EXTRACTION COMPLETED");
-        $("#totalOFD").html("Extraction Completed. Total Drivers:."+ response.driverCount);
-          setTimeout(() => {
-            $("#totalOFD").html(totalOFD);
-            pullPastReport(selectedExtractionDateTime);
-          }, 7000);
-        console.log(response);
-        
-      }else{
-        console.log("EXTRACTION FAILED");
-        $("#totalOFD").html("Extraction Failed: " + response.message);
-          setTimeout(() => {
-            $("#totalOFD").html(totalOFD);
-          }, 7000);
-        console.log(response);
-      }
-    })
-  } catch (error) {
+        await $.get(EXTRACTINGURL+selectedExtractionDateTime, function (response) {
+          if(response?.successfull){
+            $('#infoDialogDetails').html('<p>Extraction Succesfull. </p> <p>Total Drivers: '+response.driverCount+'</p>');
+            if(response.errors){
+              $('#infoDialogDetails').append('<b>Errors</b>')
+              response.errors.forEach(element => {
+                $('#infoDialogDetails').append('<p>Sender: '+element?.sender+' | Msg: '+element?.message+'</p>')
+                $('#infoDialogDetails').append('<p> <a class="btn btn-outline-accent" onclick="refreshPage()"> Reload <i class="bi bi-arrow-clockwise"></i></a></p>');
+              });
+            }
+            console.log("EXTRACTION COMPLETED");
+            $("#totalOFD").html("Extraction Completed. Total Drivers:."+ response.driverCount);
+              setTimeout(() => {
+                $("#totalOFD").html(totalOFD);
+              }, 7000);
+            console.log(response);
+          }else{
+            console.log("EXTRACTION FAILED");
+            $("#totalOFD").html("Extraction Failed: " + response.message);
+              setTimeout(() => {
+                $("#totalOFD").html(totalOFD);
+              }, 7000);
+            console.log(response);
+            
+            if(response.err === "EXTRACTION_IN_PROGRESS"){
+              $('#infoDialogDetails').html('<p>Extraction Request Bounced. </p>');
+              $('#infoDialogDetails').append('<p>'+response?.message+'</p>');
+              // $('#infoDialogDetails').append('<p> <a onclick="refreshPage()"> Reload <i class="bi bi-arrow-clockwise"></i></a></p>');
+            }
+          }
+        })   
+  }catch (error) {
     console.log("Encountered an Error Extracting mails");
     console.log(error);
     console.log(error.status);
-    if(error.status == 0){
-      $("#totalOFD").html("Email Extraction Server isnt running. Try again after starting it.");
-          setTimeout(() => {
-          $("#totalOFD").html(totalOFD);
-      }, 7000);
-    }else if(error.status == 200){
-      $("#totalOFD").html("Email Extraction Completed.");
-          setTimeout(() => {
-          $("#totalOFD").html(totalOFD);
-      }, 7000);
-    }
+    await $.post(domain + "/checkExtractionStatus/" + selectedExtractionDateTime, async function(done){
+      if(done){
+            if(error.status == 0){
+          $("#totalOFD").html("Email Extraction Server isnt running. Try again after starting it.");
+              setTimeout(() => {
+              $("#totalOFD").html(totalOFD);
+          }, 7000);
+        }else if(error.status == 200){
+          $("#totalOFD").html("Email Extraction Completed.");
+              setTimeout(() => {
+              $("#totalOFD").html(totalOFD);
+          }, 7000);
+        }
+      }else{
+        $('#infoDialogDetails').html('<p>Extraction is taking a little longer but is In Progress. </p>');
+        $('#infoDialogDetails').append('<p> Continue to hold on and click "Check Status" in another 2mins</p>');
+        $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
+      }
+    })
     
   }
   $("#pullRequestButton").removeClass("disabled");
@@ -2022,11 +2082,20 @@ async function extractMail(opts){
   $("#pullRequestButton").html('Pull Report');
 }
 
+
 async function deleteDR(){
   console.log("selected Date to Delete: ", selectedReportDateTime);
   const enteredPassword = await prompt('Enter SuperAdmin Password:');
   console.log(enteredPassword);
   deleteReport({deleteDateTime:selectedReportDateTime, password:enteredPassword});
+}
+
+async function checkAndUpdateExtractionStatus(){
+  await $.get(domain + "/checkExtractionStatus/:0", function(done) {
+    $('#infoDialogDetails').html('<p>Extraction is In Progress. </p>');
+    $('#infoDialogDetails').append('<p> Continue to hold on and click "Check Status" in another 2mins</p>');
+    $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
+  });
 }
 
 
@@ -2134,6 +2203,15 @@ async function prepareWeeklyReportInterface(){
   $("#weeklyReportMsg").show();
   await setAvailableWeeks();
   await stagePulling();
+  if(sideBarMenu.hasClass("show")){
+    sideBarMenu.toggleClass("show")
+  }
+}
+
+async function prepareDeliveryReportInterface() {
+  if(sideBarMenu.hasClass("show")){
+    sideBarMenu.toggleClass("show")
+  }
 }
 
 async function prepareMLSReportnterface(){
@@ -2153,21 +2231,21 @@ async function prepareMLSReportnterface(){
                         + driver.driverNumber + ' - <b> &nbsp;' + driver.driverName + ' - ' + stopArray.length + '</b>'
                         +'</button>'
                         +'</h2>'
-                        +'<div id="'+driverCollapseID+'" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">'
+                        +'<div id="'+driverCollapseID+'" class="accordion-collapse collapse" data-bs-parent="#accordionExample">'
                         +'<div class="accordion-body">';
                     
         let tableHead = '<div class="table-responsive">'
             +'<table id="'+tableID+'" class="table table-hover">'
             +'<thead>'
             +'<tr>'
-            +'<td><span class=" " data="barcode" onclick="mlsSortBy(this)">BARCODE</span></td>'
-            +'<td><span class=" " data="brand" onclick="mlsSortBy(this,"'+tableID+'")">BRAND</span></td>'
-            +'<td><span class=" " data="name" onclick="mlsSortBy(this)">NAME</span></td>'
-            +'<td><span class=" " data="street" onclick="mlsSortBy(this)">STREET</span></td>'
-            +'<td><span class=" " data="city" onclick="mlsSortBy(this)">CITY</span></td>'
-            +'<td><span class=" " data="state" onclick="mlsSortBy(this)">STATE</span></td>'
-            +'<td><span class=" " data="status" onclick="mlsSortBy(this)">STATUS</span></td>'
-            +'<td><span class=" " data="event" onclick="mlsSortBy(this)">LAST EVENT</span></td>'
+            +'<td><span class=" " data="barcode" >BARCODE</span></td>'
+            +'<td><span class=" " data="brand" >BRAND</span></td>'
+            +'<td><span class=" " data="name" >NAME</span></td>'
+            +'<td><span class=" " data="street" >STREET</span></td>'
+            +'<td><span class=" " data="city" >CITY</span></td>'
+            +'<td><span class=" " data="state" >STATE</span></td>'
+            +'<td><span class=" " data="status" >STATUS</span></td>'
+            +'<td><span class=" " data="event" >LAST EVENT</span></td>'
             +'</tr>'
             +'</thead>'
             +'<tbody >';
@@ -2180,7 +2258,8 @@ async function prepareMLSReportnterface(){
         let tableBody = "";
 
         for await (const stop of stopArray){
-          let tableBody = '<tr class="table-bordered">';
+          let stopAddress = stop.brand + " - " + stop.street + " " + stop.city
+          let tableBody = '<tr onclick="displayConfirmationDialog(this)" driverID="'+driver._id+'" barcode="'+stop.barcode+'" stopAddress="'+stopAddress+'" class="table-bordered">';
           let barcodeColor = (await (isPriority(stop))) ? "link-danger" : "link-secondary";  
           tableBody += '<td> <a class="'+barcodeColor+' link-offset-2" href="https://triumphcourier.com/barcodetool/track/'+(stop.barcode)+'" target="_blank">'+(stop.barcode)+' <i class="bi bi-search"></i></a></td>';
           tableBody += '<td> '+ stop.brand +'</td>';
@@ -2200,8 +2279,64 @@ async function prepareMLSReportnterface(){
   }
   $("#pullMLSReportButton").removeClass("disabled");
   $("#pullMLSReportButton").html('Load MLS Report');
+  if(sideBarMenu.hasClass("show")){
+    sideBarMenu.toggleClass("show")
+  }
 }
 
+
+function displayConfirmationDialog(evt){
+  $("#switchLoadButton").removeClass("disabled")
+  $('#addToLoadDialog .modal-body .container-fluid').html('<div class="row row-cols-4 g-2 align-items-center calendar" id="confirmDetails"></div>')
+  let event  = $(evt);
+  let driverID = event.attr("driverID");
+  let barcode = event.attr("barcode");
+  let stopAddress = event.attr("stopAddress");
+  $("#confirmDetails").html(stopAddress)
+  $("#mlsLoadFormDriverID").val(driverID)
+  $("#mlsLoadFormBarcode").val(barcode)
+   const addToLoadDialog = new bootstrap.Modal('#addToLoadDialog', {
+    keyboard: true
+  })
+  addToLoadDialog.show();
+}
+
+async function switchLoad(){
+  let mlsLoadForm = $("#mlsLoadForm").serializeArray();
+  let body = $('#addToLoadDialog .modal-body .container-fluid');
+  let oldHtml = body.html();
+  body.html('<div class="spinner-border" role="status"> <span class="visually-hidden">Loading...</span> </div>');
+  $("#switchLoadButton").addClass("disabled")
+  $.post(domain + '/switchLoadStatus', {documentID:mlsLoadForm[0].value, barcode:mlsLoadForm[1].value}, 
+    async function(result) {
+      if(result.successfull){
+        body.html('<span class="text-success"> Updated Load Status Successfully</>')
+        driverIndex = clientDeiverStatus.findIndex(d => d._id == mlsLoadForm[0].value);
+        console.log(driverIndex);
+        stopIndex = clientDeiverStatus[driverIndex].manifest.mls.findIndex(s => s.barcode == mlsLoadForm[1].value);
+        console.log(driverIndex, "  --  " , stopIndex);
+        
+        clientDeiverStatus[driverIndex].manifest.mls[stopIndex].lastScan === "Loaded";
+        
+
+        let removedItem = clientDeiverStatus[driverIndex].manifest.mls.splice(stopIndex, 1)[0];
+        clientDeiverStatus[driverIndex].manifest.ofd.push(removedItem);
+
+        // let combinedStopArray = clientDeiverStatus.manifest.map(obj => obj.values).reduce((acc, val) => acc.concat(val), []);
+        // clientDeiverStatus.manifest = combinedStopArray;
+
+        // displayReport(clientDeiverStatus, {updateWeekly:false} );
+        prepareMLSReportnterface();
+      }else{
+        $("#switchLoadButton").removeClass("disabled")
+        body.html('<span class="text-danger"> Failed to Update Load Status : ' + result.err+'</>')
+      }
+    }).fail(function(error) {
+      $("#switchLoadButton").removeClass("disabled")
+      body.html('<span class="text-danger"> Connection Failed !</>')
+    });
+
+}
 
 async function getDateOfSpecificDay(startDate, dayOfWeek) {
   const today = new Date(new Date(startDate).getTime());
@@ -2250,6 +2385,10 @@ function compareDates(t, d) {
     }
   }
   return comparison;
+}
+
+function refreshPage(){
+  location.reload();
 }
 
 async function setAvailableWeeks(){

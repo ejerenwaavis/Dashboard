@@ -1,12 +1,21 @@
 <section id="mlsReport">
     <div class="container-fluid px-0">
-        <div class="d-flex my-2 justify-content-between align-items-end">
-            <div class="">
+        <div class="d-flex justify-content-between align-items-end">
+            <div class="py-2">
                 <h6 class="placard-title fw-bold text-mute col d-inline">MLS Reports</h6>
             </div>
             
+            <div  class="py-2 btn-group-sm" role="group" >
+                Sort By:
+                <input type="radio" class="btn-check" name="options" id="option1" autocomplete="off">
+                <label class="btn btn-secondary" data="mls" onclick="sortBy(this)" for="option1">MLS</label>
+                
+                <input type="radio" class="btn-check" name="options" id="option2" autocomplete="off">
+                <label class="btn btn-secondary" data="name" onclick="sortBy(this)" for="option2">Name</label>
+             
+            </div>
             <div  class="py-2 btn-group" role="group" >
-                <button onclick="prepareMLSReportnterface()" id="pullMLSReportButton" class="btn btn-sm btn-secondary disabled">Load MLS Report</button>
+                <button onclick="prepareMLSReportnterface()" id="pullMLSReportButton" class="btn btn-sm btn-secondary disabled">Load MLS Report</button>                   
             </div>
         </div>
     </div>
@@ -52,59 +61,37 @@
     </div>
 
 
-    <div class="modal fade" id="deleteReportDatePicker" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal fade" id="addToLoadDialog" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="addToLoadDialogLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="staticBackdropLabel">Select Report Date to be Deleted</h5>
+                    <h5 class="modal-title" id="addToLoadDialogLabel">Confirm Loading</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="" id="">
-    
-    
+                    <div class="text-center" id="">
                         <div class="container-fluid">
-                            <div class="row row-cols-4 g-2 align-items-center calendar" id="">
+                            <div class="row row-cols-4 g-2 align-items-center calendar" id="confirmDetails">
     
                             </div>
                         </div>
-    
+                        <form id="mlsLoadForm" hidden>
+                            <input type="text" name="driverID" id="mlsLoadFormDriverID">
+                            <input type="text" name="barcode" id="mlsLoadFormBarcode">
+                        </form>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-accent" data-bs-dismiss="modal" onclick="deleteDR()">Delete
-                        Report</button>
+                    <button type="button" class="btn btn-accent" id="switchLoadButton" onclick="switchLoad()">Confirm</button>
                 </div>
             </div>
         </div>
     </div>
 
 
-    <div class="modal fade" id="extractPastManifestDatePicker" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-        aria-labelledby="staticBackdropLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="staticBackdropLabel">Select Extraction Date</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="" id="datePane">
-                        <div class="container-fluid">
-                            <div class="row row-cols-4 g-2 align-items-center calendar" id="">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-accent" data-bs-dismiss="modal" onclick="extractPastManifest()">Extract Past Manifest</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    
     
 </section>
 
