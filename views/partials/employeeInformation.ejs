@@ -50,9 +50,9 @@
                             </div>
                         </div>
                         <div class="col-auto ms-auto">
-                            <span onclick="performBulkAction(this)" action="verify" class="btn pb-2 mx-1"><i class="bi bi-person-up text-success fs-4"></i></span>
-                            <span onclick="performBulkAction(this)" action="deverify" class="btn pb-2 mx-1"><i class="bi bi-person-slash text-warning fs-4"></i></span>
-                            <span onclick="performBulkAction(this)" action="delete" class="btn pb-2 mx-1"><i class="bi bi-person-x text-danger fs-4"></i></span>
+                            <span onclick="performBulkAction(this)" actionMsg="verified" action="verify" class="btn pb-2 mx-1"><i class="bi bi-person-up text-success fs-4"></i></span>
+                            <span onclick="performBulkAction(this)" actionMsg="deverified" action="deverify" class="btn pb-2 mx-1"><i class="bi bi-person-slash text-warning fs-4"></i></span>
+                            <span onclick="performBulkAction(this)" actionMsg="deleted" action="delete" class="btn pb-2 mx-1"><i class="bi bi-person-x text-danger fs-4"></i></span>
                             <span class="btn pb-2 mx-1"><i class="bi bi-three-dots-vertical fs-4"></i></span>
 
                         </div>
@@ -111,8 +111,8 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-accent rounded" id="confirmAction"
-                    onclick="switchLoad()">Confirm</button>
+                <button type="button" class="btn btn-accent rounded" action="" id="userConfirmBtn"
+                    onclick="confirmUserAction(this)">Confirm</button>
             </div>
         </div>
     </div>

@@ -2404,6 +2404,14 @@ function refreshPage(){
   location.reload();
 }
 
+// Function to convert string to sentence case
+function toSentenceCase(sentence) {
+    return sentence.toLowerCase().replace(/(^\s*\w|[\.\!\?]\s*\w)/g, function(c) {
+        return c.toUpperCase();
+    });
+}
+
+
 async function setAvailableWeeks(){
     $.get(domain + '/getWeeklyReportRanges', async function (reportDates) {
       if(reportDates.length){

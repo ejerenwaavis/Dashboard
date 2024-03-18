@@ -85,6 +85,7 @@ async function performBulkAction(evt) {
   selectedUserIDs = await retrieveSelectedUserID();
   btn = $(evt);
   action = btn.attr("action");
+  actionMsg = btn.attr("actionMsg");
   
   let selectedUsers = await usersCache.filter(obj => selectedUserIDs.includes(obj._id));
 
@@ -94,25 +95,50 @@ async function performBulkAction(evt) {
     selectedUsers = [];
   }
 
-  $('#user-info-dialog-details').html(`<p><b>The Following will be ${action}. Enter the password to continue</b> </p> <br/>`);
+  $('#user-info-dialog-details').html(`<p><b>The Following will be ${actionMsg}. Enter the password to continue</b> </p> <br/>`);
+  
   
   for await(user of selectedUsers){
     $('#user-info-dialog-details').append(`<p>${user.username}</p>`)
     console.log(user.username);
   };
+
+
   $('#user-info-dialog-details').append(`<input type="text" id="adminConsolePassword" class="form-control col-8 col-offset-2">`);
   
+  $("#userConfirmBtn").attr("action", ""+action);
+  $("#userConfirmBtn").text(""+toSentenceCase(action)+" User(s)");
+
   const userInfoDialog = new bootstrap.Modal('#user-info-dialog', {
     keyboard: true
   })
   userInfoDialog.show();
+  
+}
 
 
+async function confirmUserAction(evt) {
+  let btn = $(evt);
+  selectedUserIDs = await retrieveSelectedUserID();
+  action = btn.attr("action");
+
+  console.log("btn action: ", action);
 
 
   switch (action) {
     case "verify":
       console.log("calling the verify function");
+      try {
+        await $.post(domain + "/verifyUser", function(response) {
+          console.log(response);
+          if(response){
+
+          }
+        })
+      } catch (error) {
+        console.log('Error in verify swwitch statement');
+        console.log(error);
+      }
       break;
     case "deverify":
       console.log("calling the deverify Function");
@@ -131,12 +157,12 @@ async function performBulkAction(evt) {
       console.log("Got to the default block.");
       break;
   }
-
 }
-
 
 
 
 function makeProUser(params) {
   
 }
+
+
