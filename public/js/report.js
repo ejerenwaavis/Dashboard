@@ -782,8 +782,14 @@ async function sortBy(evt){
           }else if (a.driverName[0] < b.driverName[0]){
               return -1;
           }else{
+            if (a.driverName[1] > b.driverName[1]) {
+                return 1;   
+            }else if (a.driverName[1] < b.driverName[1]){
+                return -1;
+            }else{
               return 0;
-          }
+            }
+        }
       });
       break;
     case "driverNumber":
@@ -822,6 +828,8 @@ async function sortBy(evt){
   }
   await displayReportWithClientStauts(clientDeiverStatus);
 }
+
+
 
 
 
@@ -2096,14 +2104,14 @@ async function checkAndUpdateExtractionStatus(){
           $('#infoDialogDetails').append('<p> Continue to hold on and click "Check Status" in another 2mins</p>');
           $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
       }else{
-        $('#infoDialogDetails').html('<p>Failed to check for extration status</p>');
-        $('#infoDialogDetails').append('<p> Continue to hold on and click "Check Status" in another <b>2 mins</b></p>');
-        $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
+        $('#infoDialogDetails').html('<p>Extraction Completed</p>');
+        $('#infoDialogDetails').append('<p> Click the button below to reload the updated offline report</b></p>');
+        $('#infoDialogDetails').append('<p> <a class="btn btn-accent" onclick="pullLocalReport()"> Display Updated Report <i class="bi bi-arrow-clockwise"></i></a></p>');
       }
     });
   } catch (error) {
         $('#infoDialogDetails').html('<p>Encountered an error checking extraction status</p>');
-        $('#infoDialogDetails').append('<p> Try Extracting again</p>');
+        $('#infoDialogDetails').append('<p>Close this dialog and try Extracting again</p>');
         // $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');  
   }
 }

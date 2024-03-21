@@ -5,7 +5,7 @@
             <h6 class="placard-title text-mute col">EMPLOYEE INFO</h6>
         </div>
         <div class="py-2">
-            <button onclick="refreshEmployeeTable()" class="btn btn-sm btn-secondary">Refresh List <i class="fas fa-sync-alt"></i></button>
+            <button onclick="prepareEmployeeInterface()" class="btn btn-sm btn-secondary">Refresh List <i class="fas fa-sync-alt"></i></button>
             <button class="btn disabled btn-sm btn-secondary">Add Employee <i class="fas fa-user-plus"></i></button>
         </div>
        
@@ -31,20 +31,23 @@
                             <div class="d-inline">
                                 <button type="" role="button" data-bs-toggle="dropdown" aria-expanded="false" class="btn btn-outline-secondary mb-3"><i class="bi bi-sliders"></i></button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item btn" onclick="">All Users</a></li>
+                                    <li><a class="dropdown-item btn" data="showAll" onclick="filterUsersBy(this)">Show All Users</a></li>
                                     <li>
                                         <hr class="dropdown-divider">
                                     </li>
-                                    <li><a class="dropdown-item btn" data="admin" id="" onclick="">Admin</a></li>
-                                    <li><a class="dropdown-item btn" data="users" id="" onclick="">Users</a></li>
+                                    <li><a class="dropdown-item btn" data="admin" onclick="filterUsersBy(this)" id="" onclick="">Admin</a></li>
+                                    <li><a class="dropdown-item btn" data="users" onclick="filterUsersBy(this)" id="" onclick="">Users</a></li>
+                                    <li><a class="dropdown-item btn" data="verified" onclick="filterUsersBy(this)" id="" onclick="">Verified</a></li>
+                                    <li><a class="dropdown-item btn" data="unverified" onclick="filterUsersBy(this)" id="" onclick="">UnVerified</a></li>
                                 </ul>
                             </div>
                             <div class="d-inline">
                                 
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item btn" onclick="">Name</a></li>
-                                    <li><a class="dropdown-item btn" data="admin" id="" onclick="">Role</a></li>
-                                    <li><a class="dropdown-item btn" data="users" id="" onclick="">Date</a></li>
+                                    <li><a class="dropdown-item btn" data="name" onclick="sortUsersBy(this)">Name</a></li>
+                                    <li><a class="dropdown-item btn" data="role" onclick="sortUsersBy(this)" id="" >Role</a></li>
+                                    <li><a class="dropdown-item btn" data="verified" onclick="sortUsersBy(this)" id="" >Verified</a></li>
+                                    <li><a class="dropdown-item btn" data="date" onclick="sortUsersBy(this)" id="" >Date</a></li>
                                 </ul>
                                 <button type="" role="button" data-bs-toggle="dropdown" aria-expanded="false" class="btn btn-outline-secondary mb-3"><i class="bi bi-sort-alpha-down"></i></button>
                             </div>
@@ -63,14 +66,16 @@
                                 <tr>
                                     <th scope="col">
                                         <div class="form-check">
-                                            <input class="form-check-input" name="selectAllUsers" type="checkbox" value="" id="selectAll">
+                                            <input class="form-check-input" name="selectAllUsers" onclick="handleSelectAllUsers(this)" type="checkbox" value="" id="selectAll">
                                         </div>
                                     </th>
-                                    <th scope="col">Name</th>
+                                    <th scope="col" data="name" onclick="sortUsersBy(this)" >Name</th>
                                     <th scope="col">Email</th>
-                                    <th scope="col">Role</th>
-                                    <th scope="col">Verified</th>
+                                    <th scope="col" data="role" onclick="sortUsersBy(this)">Role</th>
+                                    <th scope="col" data="verified" onclick="sortUsersBy(this)">Verified</th>
                                     <th scope="col">Actions</th>
+                                    <th scope="col">&nbsp;</th>
+                                    <th scope="col">&nbsp;</th>
                                 </tr>
                             </thead>
                             <!-- Data -->

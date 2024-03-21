@@ -3,6 +3,7 @@ if (!SERVER){
   require("dotenv").config();
 }
 
+const ADMINCONSOLE = process.env.ADMINCONSOLE;
 
 const CLIENT_ID = process.env.CLIENTID;
 const CLIENT_SECRETE = process.env.CLIENTSECRETE;
@@ -1167,8 +1168,102 @@ app.route(APP_DIRECTORY + "/getUsers")
     }
 })
 
+app.route(APP_DIRECTORY+"/validateConsolePassword")
+  .get(function(req, res) {
+    res.send(false);
+  })
+  .post(function(req, res) {
+    pass = req.body.password;
+    if (pass === ADMINCONSOLE) {
+      res.send(true);
+    } else {
+      res.send(false);
+    }
+  })
 
+app.route(APP_DIRECTORY+"/verifyUser")
+  .post(async function(req,res){
+    errors = [];
+    fails = [];
+    let users = req.body.users;
+    
+    for await (user of users){
+      var id = user._id; 
+      User.updateOne({_id:id}, { verified: true,  $push: { approvalNotes: {description:"Verified", adminUsername:user.username, adminEmail:user.email, date:new Date()} }},function(err,updated){
+        if(updated.n > 0){
+          console.error("user verification Succesful: "+id);
+        }else{
+          console.error(err);
+          fails.push(user);
+        }
+      })
+    }
+    
+    if(errors.length > 0){
+      res.send({status:"done", err:errors, successfull: false, fails:fails})
+    }else{
+      res.send({status:"done", err:errors, successfull: true, fails:fails})
+    }
+  })
 
+app.route(APP_DIRECTORY+"/restrictUser")
+  .post(function(req,res){
+    let id = req.body.userID;
+    // console.error(id);
+    User.updateOne({_id:id}, { verified: false, $push: { approvalNotes: {description:"Restricted", adminUsername:req.user.username, adminEmail:req.user.email, date:new Date()} }},function(err,updated){
+      if(updated.n > 0){
+        res.send(true);
+      }else{
+        console.error(err);
+        res.send(false);
+      }
+    })
+  });
+
+app.route(APP_DIRECTORY+"/makeProUser")
+  .post(function(req,res){
+    // console.error("");
+    let id = req.body.userID;
+    console.error(id);
+    User.updateOne({_id:id}, { isProUser: true,  $push: { approvalNotes: {description:"Upgraded to ProUser", adminUsername:req.user.username, adminEmail:req.user.email, date:new Date()} } },function(err,updated){
+      if(updated.n > 0){
+        res.send(true);
+      }else{
+        console.error(err);
+        res.send(false);
+      }
+    })
+  });
+
+app.route(APP_DIRECTORY+"/revokeProUser")
+  .post(function(req,res){
+    let id = req.body.userID;
+    // console.error(id);
+    User.updateOne({_id:id}, { isProUser: false, $push: { approvalNotes: {description:"Revoked ProUser Priviledges", adminUsername:req.user.username, adminEmail:req.user.email, date:new Date()} } },function(err,updated){
+      if(updated.n > 0){
+        res.send(true);
+      }else{
+        console.error(err);
+        res.send(false);
+      }
+    })
+  })
+
+  app.route(APP_DIRECTORY+"/deleteUser")
+  .post(function(req,res){
+    let id = req.body.userID;
+    // console.error(id);
+    User.deleteOne({_id:id},function(err,deleted){
+      // console.error(err);
+      // console.error(deleted);
+      if(deleted.deletedCount > 0){
+        res.send(true);
+      }else{
+        console.error(err);
+        res.send(false);
+      }
+    })
+  })
 
 
 
