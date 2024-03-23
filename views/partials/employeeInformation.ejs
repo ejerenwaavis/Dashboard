@@ -25,7 +25,7 @@
                     <div class="row g-3">
                         <div class="col-auto">
                             <label for="user-search" class="visually-hidden"> </label>
-                            <input type="text" class="form-control" id="user-search" placeholder="Search User">
+                            <input type="text" class="form-control" onkeyup="filterUsersNameSearch(this)" id="user-search" placeholder="Search User">
                         </div>
                         <div class="col-auto">
                             <div class="d-inline">
@@ -72,10 +72,10 @@
                                     <th scope="col" data="name" onclick="sortUsersBy(this)" >Name</th>
                                     <th scope="col">Email</th>
                                     <th scope="col" data="role" onclick="sortUsersBy(this)">Role</th>
-                                    <th scope="col" data="verified" onclick="sortUsersBy(this)">Verified</th>
-                                    <th scope="col">Actions</th>
-                                    <th scope="col">&nbsp;</th>
-                                    <th scope="col">&nbsp;</th>
+                                    <th class="text-center" scope="col" data="verified" onclick="sortUsersBy(this)">Status</th>
+                                    <th class="text-center" scope="col">Actions</th>
+                                    <th class="text-center" scope="col">&nbsp;</th>
+                                    <th class="text-center" scope="col">&nbsp;</th>
                                 </tr>
                             </thead>
                             <!-- Data -->

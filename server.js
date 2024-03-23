@@ -651,8 +651,14 @@ app.route(APP_DIRECTORY + "/deleteAccess")
 
 
 
-
-
+app.route(APP_DIRECTORY + "/getClientUser")
+.get(function (req, res) {
+    if(req.isAuthenticated){
+      res.send(req.user)
+    }else{
+      res.send(null)
+    }
+  })
 
 /********** Handling Report Requests ***********/
 
@@ -757,10 +763,7 @@ app.route(APP_DIRECTORY + "/getDriverReport")
     // today = yesterday; // Remove before publshing - Fetches the previous days report
     console.error("getting Todays Report Automatically ", today);
     
-    //Uncoment the large commment to resume functionallity
-    console.log("in development mode, sending empty report");
-    res.send([]);
-    /*
+    
     let report = await DriverReport.find({date:today},'-__v');
     
 
@@ -790,7 +793,7 @@ app.route(APP_DIRECTORY + "/getDriverReport")
         res.send({error:"", msg:"Found Nothing, check old database"});
       }
     }
-    */
+    
 })
 
 app.route(APP_DIRECTORY + "/getReport/:date")
@@ -1152,7 +1155,7 @@ app.route(APP_DIRECTORY + "/updateWeeklyReport")
 
 
 
-/****************** EMPLOYEE SECTION ***************** */
+/****************** USER / EMPLOYEE OPERATIONS ***************** */
 app.route(APP_DIRECTORY + "/getUsers")
   .get(async function (req, res) {
     if(req.isAuthenticated && req.user){
@@ -1186,19 +1189,27 @@ app.route(APP_DIRECTORY+"/verifyUser")
     errors = [];
     fails = [];
     let users = req.body.users;
-    
-    for await (user of users){
-      var id = user._id; 
-      User.updateOne({_id:id}, { verified: true,  $push: { approvalNotes: {description:"Verified", adminUsername:user.username, adminEmail:user.email, date:new Date()} }},function(err,updated){
-        if(updated.n > 0){
-          console.error("user verification Succesful: "+id);
-        }else{
-          console.error(err);
-          fails.push(user);
-        }
-      })
+    admin = req.user;
+    if(admin && admin.isProUser){
+      for await (user of users){
+        var id = user._id; 
+        await User.updateOne({_id:id}, { verified: true,  $push: { approvalNotes: {description:"Verified", adminUsername:admin.username, adminEmail:admin.email, date:new Date()} }},function(err,updated){
+          if(!err){
+            if(updated.n > 0){
+              console.error("user verification Succesfull: ", id);
+            }else{
+              console.error("user verification FAILED: ", id);
+              fails.push(user);
+            }
+          }else{
+            errors.push(err);
+          }
+        })
+      }
+    }else{
+      errors.push({err:"ACCESS DENIED", msg:"Admin Priviledge required"})
     }
-    
+      
     if(errors.length > 0){
       res.send({status:"done", err:errors, successfull: false, fails:fails})
     }else{
@@ -1207,62 +1218,149 @@ app.route(APP_DIRECTORY+"/verifyUser")
   })
 
 app.route(APP_DIRECTORY+"/restrictUser")
-  .post(function(req,res){
-    let id = req.body.userID;
-    // console.error(id);
-    User.updateOne({_id:id}, { verified: false, $push: { approvalNotes: {description:"Restricted", adminUsername:req.user.username, adminEmail:req.user.email, date:new Date()} }},function(err,updated){
-      if(updated.n > 0){
-        res.send(true);
-      }else{
-        console.error(err);
-        res.send(false);
+  .post(async function(req,res){
+
+    errors = [];
+    fails = [];
+    let users = req.body.users;
+    admin = req.user;
+    if(admin && admin.isProUser){
+      for await (user of users){
+        let id = user._id;
+        // console.error(id);
+        await User.updateOne({_id:id}, { verified: false, $push: { approvalNotes: {description:"Restricted", adminUsername:admin.username, adminEmail:admin.email, date:new Date()} }},function(err,updated){
+          if(!err){
+            if(updated.n > 0){
+              console.error("user restriction Succesfull: ", id);
+            }else{
+              console.error("user restriction FAILED: ", id);
+              fails.push(user);
+            }
+          }else{
+            errors.push(err);
+          }
+        })
       }
-    })
+    }else{
+      errors.push({err:"ACCESS DENIED", msg:"Admin Priviledge required"})
+    }
+      
+    if(errors.length > 0){
+      res.send({status:"done", err:errors, successfull: false, fails:fails})
+    }else{
+      res.send({status:"done", err:errors, successfull: true, fails:fails})
+    }
   });
 
 app.route(APP_DIRECTORY+"/makeProUser")
-  .post(function(req,res){
-    // console.error("");
-    let id = req.body.userID;
-    console.error(id);
-    User.updateOne({_id:id}, { isProUser: true,  $push: { approvalNotes: {description:"Upgraded to ProUser", adminUsername:req.user.username, adminEmail:req.user.email, date:new Date()} } },function(err,updated){
-      if(updated.n > 0){
-        res.send(true);
-      }else{
-        console.error(err);
-        res.send(false);
+  .post(async function(req,res){
+    
+    errors = [];
+    fails = [];
+    let users = req.body.users;
+    admin = req.user;
+    
+    if(admin && admin.isProUser){
+      for await (user of users){
+        let id = user._id;
+        //console.error("");
+        // console.error(id);
+        await User.updateOne({_id:id}, { isProUser: true,  $push: { approvalNotes: {description:"Upgraded to ProUser", adminUsername:admin.username, adminEmail:admin.email, date:new Date()} } },function(err,updated){
+          if(!err){
+            if(updated.n > 0){
+              console.error("ProUser Elevation Succesfull: ", id);
+            }else{
+              console.error("PRO User elevation FAILED: ", id);
+              fails.push(user);
+            }
+          }else{
+            errors.push(err);
+          }
+        })
       }
-    })
+    }else{
+      errors.push({err:"ACCESS DENIED", msg:"Admin Priviledge required"})
+    }
+      
+    if(errors.length > 0){
+      res.send({status:"done", err:errors, successfull: false, fails:fails})
+    }else{
+      res.send({status:"done", err:errors, successfull: true, fails:fails})
+    }
   });
 
 app.route(APP_DIRECTORY+"/revokeProUser")
-  .post(function(req,res){
-    let id = req.body.userID;
-    // console.error(id);
-    User.updateOne({_id:id}, { isProUser: false, $push: { approvalNotes: {description:"Revoked ProUser Priviledges", adminUsername:req.user.username, adminEmail:req.user.email, date:new Date()} } },function(err,updated){
-      if(updated.n > 0){
-        res.send(true);
-      }else{
-        console.error(err);
-        res.send(false);
+  .post(async function(req,res){
+    errors = [];
+    fails = [];
+    let users = req.body.users;
+    admin = req.user;
+    
+    if(admin && admin.isProUser){
+      for await (user of users){
+        let id = user._id;
+        //console.error("");
+        // console.error(id);
+        User.updateOne({_id:id}, { isProUser: false, $push: { approvalNotes: {description:"Revoked ProUser Priviledges", adminUsername:admin.username, adminEmail:admin.email, date:new Date()} } },function(err,updated){
+          if(!err){
+            if(updated.n > 0){
+              console.error("ProUser Status revoked Succesfully: ", id);
+            }else{
+              console.error("PRO User revokking FAILED: ", id);
+              fails.push(user);
+            }
+          }else{
+            errors.push(err);
+          }
+        })
       }
-    })
+    }else{
+      errors.push({err:"ACCESS DENIED", msg:"Admin Priviledge required"})
+    }
+      
+    if(errors.length > 0){
+      res.send({status:"done", err:errors, successfull: false, fails:fails})
+    }else{
+      res.send({status:"done", err:errors, successfull: true, fails:fails})
+    }    
   })
 
   app.route(APP_DIRECTORY+"/deleteUser")
-  .post(function(req,res){
-    let id = req.body.userID;
-    // console.error(id);
-    User.deleteOne({_id:id},function(err,deleted){
-      // console.error(err);
-      // console.error(deleted);
-      if(deleted.deletedCount > 0){
-        res.send(true);
-      }else{
-        console.error(err);
-        res.send(false);
+  .post(async function(req,res){
+    errors = [];
+    fails = [];
+    let users = req.body.users;
+    admin = req.user;
+    
+    if(admin && admin.isProUser){
+      for await (user of users){
+        let id = user._id;
+        //console.error("");
+        // console.error(id);
+        User.deleteOne({_id:id},function(err,deleted){
+          // console.error(err);
+          // console.error(deleted);
+          if(!err){
+            if(deleted.deletedCount > 0){
+              console.error("User Deleted: ", id);
+            }else{
+            console.error("User Deletion FAILED: ", id);
+            fails.push(user);
+            }
+          }else{
+            errors.push(err);
+          }
+        })
       }
-    })
+    }else{
+      errors.push({err:"ACCESS DENIED", msg:"Admin Priviledge required"})
+    }
+      
+    if(errors.length > 0){
+      res.send({status:"done", err:errors, successfull: false, fails:fails})
+    }else{
+      res.send({status:"done", err:errors, successfull: true, fails:fails})
+    }   
   })
 
 

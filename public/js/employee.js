@@ -22,6 +22,13 @@ function renderEmployeeData(data) {
   tbody.empty(); // Clear existing data
   
   data.forEach(function(employee) {
+      const adminFunctions = `<div>
+                                  <ul class="dropdown-menu">
+                                      <li><a class="dropdown-item btn" data="date" onclick="${employee.isSuperAdmin? 'revokeProUser(this)':'makeProUser(this)'}" id="" >${employee.isSuperAdmin? 'Revoke ProUser':'Make ProUser'}</a></li>
+                                  </ul>
+                                  <span data-bs-toggle="dropdown" role="button" class="btn pb-2 mx-1"><i class="bi bi-three-dots-vertical fs-4"></i></span>
+                              </div>`; 
+      const regularFunctions = `<div class="d-inline-block"><button type="" role="button" class="btn pb-2 mx-1"><i class="bi bi-three-dots-vertical fs-4"></i></button></div>`;                         
       const row = `
           <tr>
               <td class="text-start">
@@ -32,15 +39,15 @@ function renderEmployeeData(data) {
               <td class="text-start">${employee.username}</td>
               <td class="text-start">${employee.email}</td>
               <td class="text-start">${employee.isProUser? "Admin":"User"}</td>
-              <td class="text-start">${employee.verified? '<i class="bi bi-shield-fill-check text-success fs-4"></i>' : '<i class="bi bi-shield-fill-exclamation text-danger fs-4"></i>'}</td>
-              <td class="text-start">
+              <td class="text-center">${employee.verified? '<i class="bi bi-shield-fill-check text-success fs-4"></i>' : '<i class="bi bi-shield-fill-exclamation text-danger fs-4"></i>'}</td>
+              <td class="text-center">
                 <div class="d-inline-block"><span class="btn pb-2 mx-1" onclick="${employee.verified? "deverify(this)":"verify(this)"}"><i class="bi bi-person-fill-${employee.verified? "down text-warning":"up"} fs-4"></i></span></div>
               </td>
-              <td class="text-start">
-                <div class="d-inline-block"><span class="btn pb-2 mx-1" onclick="delete(this)"><i class="bi bi-person-x-fill fs-4 text-danger"></i></span></div>
+              <td class="text-center">
+                <div class="d-inline-block"><span class="btn pb-2 mx-1" onclick="deleteUser(this)"><i class="bi bi-person-x-fill fs-4 text-danger"></i></span></div>
               </td>
-              <td class="text-start">
-                  <div class="d-inline-block"><span class="btn pb-2 mx-1"><i class="bi bi-three-dots-vertical fs-4"></i></span></div>
+              <td class="text-center">
+                  ${clientUser?.isSuperAdmin ? adminFunctions : regularFunctions}
               </td>
           </tr>
       `;
@@ -102,15 +109,76 @@ async function verify(evt) {
   userID = relativeCheckBox.attr("user-id");
   console.log(userID);
 
-  user = usersCache.filter(u => u._id == userID);
+  user = await usersCache.filter(u => u._id == userID);
   console.log(user);
   data = {user:user, actionMsg:"Verified", action:"verify"};
 
   performSingleUserManipulationAction(data);
 }
 
+async function deverify(evt) {
+  var btn = $(evt);
+  var closestTR = $(evt).closest('tr');
 
+  var relativeCheckBox = await closestTR.find('.userCheckBox');
+  console.log(relativeCheckBox);
+  userID = relativeCheckBox.attr("user-id");
+  console.log(userID);
 
+  user = await usersCache.filter(u => u._id == userID);
+  console.log(user);
+  data = {user:user, actionMsg:"Unverified", action:"deverify"};
+
+  performSingleUserManipulationAction(data);
+}
+
+async function deleteUser(evt) {
+  var btn = $(evt);
+  var closestTR = $(evt).closest('tr');
+
+  var relativeCheckBox = await closestTR.find('.userCheckBox');
+  console.log(relativeCheckBox);
+  userID = relativeCheckBox.attr("user-id");
+  console.log(userID);
+
+  user = await usersCache.filter(u => u._id == userID);
+  console.log(user);
+  data = {user:user, actionMsg:"Deleted", action:"delete"};
+
+  performSingleUserManipulationAction(data);
+}
+
+async function makeProUser(evt) {
+  var btn = $(evt);
+  var closestTR = $(evt).closest('tr');
+
+  var relativeCheckBox = await closestTR.find('.userCheckBox');
+  console.log(relativeCheckBox);
+  userID = relativeCheckBox.attr("user-id");
+  console.log(userID);
+
+  user = await usersCache.filter(u => u._id == userID);
+  console.log(user);
+  data = {user:user, actionMsg:"Promoted to Admin", action:"makeProUser"};
+
+  performSingleUserManipulationAction(data);
+}
+
+async function revokeProUser(evt) {
+  var btn = $(evt);
+  var closestTR = $(evt).closest('tr');
+
+  var relativeCheckBox = await closestTR.find('.userCheckBox');
+  console.log(relativeCheckBox);
+  userID = relativeCheckBox.attr("user-id");
+  console.log(userID);
+
+  user = await usersCache.filter(u => u._id == userID);
+  console.log(user);
+  data = {user:user, actionMsg:"Demoted from Admin Status", action:"revokeProUser"};
+
+  performSingleUserManipulationAction(data);
+}
 
 
 
@@ -147,7 +215,7 @@ async function performBulkAction(evt) {
     selectedUsers = [];
   }
 
-  $('#user-info-dialog-tittle').text(`Bulk Operation`);
+  $('#user-info-dialog-tittle').text(`Bulk ${toSentenceCase(action)} Operation`);
   $('#user-info-dialog-details').html(`<p><b>The Following will be ${actionMsg}. Enter the password to continue</b> </p> <br/>`);
   
 
@@ -157,7 +225,7 @@ async function performBulkAction(evt) {
   };
 
 
-  $('#user-info-dialog-details').append(`<input type="password" placeholder="Type Admin-Verification Password" id="adminConsolePassword" class="form-control col-8 col-offset-2">`);
+  $('#user-info-dialog-details').append(`<input type="password" placeholder="Type Admin-Verification Password" id="adminConsolePassword" class="form-control text-center col-6 col-offset-3">`);
   
   $("#userConfirmBtn").attr("action", ""+action);
   $("#userConfirmBtn").text(""+toSentenceCase(action)+" User(s)");
@@ -173,7 +241,7 @@ async function performSingleUserManipulationAction(data) {
   let selectedUser = data.user;
   selectedUsersForManipulation = data.user
 
-  $('#user-info-dialog-tittle').text(`Single Operation`);
+  $('#user-info-dialog-tittle').text(`Single ${toSentenceCase(data.action)} Operation`);
   $('#user-info-dialog-details').html(`<p><b>The Following will be ${data.actionMsg}. Enter the password to continue</b> </p> <br/>`);
   
   selectedUser.forEach(function (u) {
@@ -181,21 +249,19 @@ async function performSingleUserManipulationAction(data) {
   })
 
 
-  $('#user-info-dialog-details').append(` <div class="container"> <input type="password" placeholder="Type Admin-Verification Password" id="adminConsolePassword" class="form-control col-8 col-offset-2"> </div>`);
+  $('#user-info-dialog-details').append(` <div class="container"> <input type="password" placeholder="Type Admin-Verification Password" id="adminConsolePassword" class="form-control text-center col-6 col-offset-3"> </div>`);
   $("#userConfirmBtn").attr("action", ""+data.action);
-  $("#userConfirmBtn").text(""+toSentenceCase(data.action)+" User(s)");
+  $("#userConfirmBtn").text(""+toSentenceCase(data.action)+" User");
 
   const userInfoDialog = new bootstrap.Modal('#user-info-dialog', {
     keyboard: true
   })
   userInfoDialog.show();
-  
 }
 
 
 function resetConfirmDialogBody(action){
   actionMsg = "";
-  console.log("PAssed Down Action is : ", action);
   if(action ==="verify"){
     actionMsg = "Verified"
   }else if(action ==="deverify"){
@@ -204,11 +270,11 @@ function resetConfirmDialogBody(action){
     actionMsg = "Promoted to Admin"
   }else if(action ==="revokeProUser"){
     actionMsg = "Demoted from Admin Status"
+  }else if(action ==="delete"){
+    actionMsg = "Deleted"
   }else{
     actionMsg = "..."
   }
-
-  console.log(actionMsg);
 
   $('#user-info-dialog-details').html(`<p><b>The Following will be ${actionMsg}. Enter the password to continue</b> </p> <br/>`);
   
@@ -219,13 +285,6 @@ function resetConfirmDialogBody(action){
 
   $('#user-info-dialog-details').append(` <div class="container"> <input type="password" placeholder="Type Admin-Verification Password" id="adminConsolePassword" value="${enteredAdminPassword}" class="form-control col-8 col-offset-2"> </div>`);
   
-  $("#userConfirmBtn").attr("action", ""+data.action);
-  $("#userConfirmBtn").text(""+toSentenceCase(data.action)+" User(s)");
-
-  const userInfoDialog = new bootstrap.Modal('#user-info-dialog', {
-    keyboard: true
-  })
-  userInfoDialog.show();
 }
 
 
@@ -239,7 +298,20 @@ async function confirmUserAction(evt) {
                                        </div> </div>`)
   console.log("Final Step is done, now sending to server");
   console.log("btn action: ", action);
-
+  let actionMsg = "";
+  if(action ==="verify"){
+    actionMsg = "Verified"
+  }else if(action ==="deverify"){
+    actionMsg = "Unverified"
+  }else if(action ==="makeProUser"){
+    actionMsg = "Promoted to Admin"
+  }else if(action ==="revokeProUser"){
+    actionMsg = "Demoted from Admin Status"
+  }else if(action ==="delete"){
+    actionMsg = "Deleted"
+  }else{
+    actionMsg = "..."
+  }
 
   switch (action) {
     case "verify":
@@ -250,8 +322,9 @@ async function confirmUserAction(evt) {
             await $.post(domain + "/verifyUser",{users:selectedUsersForManipulation}, function(response) {
               console.log(response);
               if(response.successfull){
-                $('#user-info-dialog-details').html(`<b class="text-success">Users ${action} Successfuly</b>`);
-                $('#user-info-dialog-details').append(`<p class="">Processed : ${response.fails.length, "/" , selectedUsersForManipulation.length } user(s)</p>`);
+                $('#user-info-dialog-details').html(`<b class="text-success">Users ${actionMsg} Successfuly</b>`);
+                $('#user-info-dialog-details').append(`<p class="">Processed : ${(selectedUsersForManipulation.length - response.fails.length)} /  ${selectedUsersForManipulation.length} user(s)</p>`);
+                $('#user-info-dialog-details').append(`<p class="py-3"> <span onclick="prepareEmployeeInterface()" data-bs-dismiss="modal" class="btn btn-outline-accent btn-sm"> Reload Users <i class="bi bi-arrow-clockwise"></i></span> </p>`);  
                 //  $('#user-info-dialog-details').append(`<p class="py-3"> <span onlcick="resetConfirmDialogBody(${action})" class="btn btn-outline-acccent btn-sm"> Retry <i class="bi bi-arrow-clockwise"></i></span> </p>`);
               }else{
                 $('#user-info-dialog-details').html(`<b class="text-success">Operation Completed with the Following Errors / Warnings</b>`);
@@ -264,31 +337,167 @@ async function confirmUserAction(evt) {
               }
             })
           } catch (error) {
-            $('#user-info-dialog-details').html(`Operation Failed ${error}`);
-            $('#user-info-dialog-details').append(`Error: ${error.responseText}`);
-            $('#user-info-dialog-details').append(`${error.statusText}`);
+            $('#user-info-dialog-details').html(`<b class="text-danger">Operation Failed</b>`);
+            $('#user-info-dialog-details').append(`<p>Error: ${error.responseText}`);
+            $('#user-info-dialog-details').append(`${error.statusText}</p`);
             console.log('Error in verify swwitch statement');
             console.log(error);
           }
         }else{
           $('#user-info-dialog-details').html(`<b class="text-danger">Wrong Password</b>`);
-          $('#user-info-dialog-details').append(`<p class="py-3"> <span onlcick="resetConfirmDialogBody(${action})" class="btn btn-outline-acccent btn-sm"> Retry <i class="bi bi-arrow-clockwise"></i></span> </p>`);
+          $('#user-info-dialog-details').append(`<p class="py-3"> <span onclick="resetConfirmDialogBody('${action}')" class="btn btn-outline-accent btn-sm"> Retry <i class="bi bi-arrow-clockwise"></i></span> </p>`);
           
           console.log('Invalid Admin Password');
         }
       });
       break;
     case "deverify":
-      console.log("calling the deverify Function");
+      console.log("calling the deverify function");
+      $.post(domain+"/validateConsolePassword", {password:password} ,async function(accessGranted){
+        if(accessGranted){
+          try {
+            await $.post(domain + "/restrictUser",{users:selectedUsersForManipulation}, function(response) {
+              console.log(response);
+              if(response.successfull){
+                $('#user-info-dialog-details').html(`<b class="text-success">Operation Completed</b>`);
+                $('#user-info-dialog-details').append(`<p class="">Processed : ${(selectedUsersForManipulation.length - response.fails.length)} /  ${selectedUsersForManipulation.length} user(s)</p>`);
+                $('#user-info-dialog-details').append(`<p class="py-3"> <span onclick="prepareEmployeeInterface()" data-bs-dismiss="modal" class="btn btn-outline-accent btn-sm"> Reload Users <i class="bi bi-arrow-clockwise"></i></span> </p>`);  
+            //  $('#user-info-dialog-details').append(`<p class="py-3"> <span onlcick="resetConfirmDialogBody(${action})" class="btn btn-outline-acccent btn-sm"> Retry <i class="bi bi-arrow-clockwise"></i></span> </p>`);
+              }else{
+                $('#user-info-dialog-details').html(`<b class="text-success">Operation Completed with the Following Errors / Warnings</b>`);
+                $('#user-info-dialog-details').append(`<p class="">Failed to process : ${response.fails.length} user(s)</p>`);
+                $('#user-info-dialog-details').append(`<ul class="">`);
+                for (fail of response.fails){
+                  $('#user-info-dialog-details').append(`<li class=""> ${fail.username , " - " , fail.firstName} </li>`);
+                }
+                $('#user-info-dialog-details').append(`</ul>`);
+              }
+            })
+          } catch (error) {
+            $('#user-info-dialog-details').html(`<b class="text-danger">Operation Failed</b>`);
+            $('#user-info-dialog-details').append(`<p>Error: ${error.responseText}`);
+            $('#user-info-dialog-details').append(`${error.statusText}</p`);
+            console.log('Error in verify swwitch statement');
+            console.log(error);
+          }
+        }else{
+          $('#user-info-dialog-details').html(`<b class="text-danger">Wrong Password</b>`);
+          $('#user-info-dialog-details').append(`<p class="py-3"> <span onclick="resetConfirmDialogBody('${action}')" class="btn btn-outline-accent btn-sm"> Retry <i class="bi bi-arrow-clockwise"></i></span> </p>`);
+          
+          console.log('Invalid Admin Password');
+        }
+      });
       break;
     case "makeProUser":
-      console.log("calling the MakeProUser");
+      console.log("calling the makeProUser function");
+      $.post(domain+"/validateConsolePassword", {password:password} ,async function(accessGranted){
+        if(accessGranted){
+          try {
+            await $.post(domain + "/makeProUser",{users:selectedUsersForManipulation}, function(response) {
+              console.log(response);
+              if(response.successfull){
+                $('#user-info-dialog-details').html(`<b class="text-success">Operation Completed</b>`);
+                $('#user-info-dialog-details').append(`<p class="">Processed : ${(selectedUsersForManipulation.length - response.fails.length)} /  ${selectedUsersForManipulation.length} user(s)</p>`);
+                $('#user-info-dialog-details').append(`<p class="py-3"> <span onclick="prepareEmployeeInterface()" data-bs-dismiss="modal" class="btn btn-outline-accent btn-sm"> Reload Users <i class="bi bi-arrow-clockwise"></i></span> </p>`);  
+            //  $('#user-info-dialog-details').append(`<p class="py-3"> <span onlcick="resetConfirmDialogBody(${action})" class="btn btn-outline-acccent btn-sm"> Retry <i class="bi bi-arrow-clockwise"></i></span> </p>`);
+              }else{
+                $('#user-info-dialog-details').html(`<b class="text-success">Operation Completed with the Following Errors / Warnings</b>`);
+                $('#user-info-dialog-details').append(`<p class="">Failed to process : ${response.fails.length} user(s)</p>`);
+                $('#user-info-dialog-details').append(`<ul class="">`);
+                for (fail of response.fails){
+                  $('#user-info-dialog-details').append(`<li class=""> ${fail.username , " - " , fail.firstName} </li>`);
+                }
+                $('#user-info-dialog-details').append(`</ul>`);
+              }
+            })
+          } catch (error) {
+            $('#user-info-dialog-details').html(`<b class="text-danger">Operation Failed</b>`);
+            $('#user-info-dialog-details').append(`<p>Error: ${error.responseText}`);
+            $('#user-info-dialog-details').append(`${error.statusText}</p`);
+            console.log('Error in verify swwitch statement');
+            console.log(error);
+          }
+        }else{
+          $('#user-info-dialog-details').html(`<b class="text-danger">Wrong Password</b>`);
+          $('#user-info-dialog-details').append(`<p class="py-3"> <span onclick="resetConfirmDialogBody('${action}')" class="btn btn-outline-accent btn-sm"> Retry <i class="bi bi-arrow-clockwise"></i></span> </p>`);
+          
+          console.log('Invalid Admin Password');
+        }
+      });
       break;
     case "revokeProUser":
       console.log("calling revokeUserFunction");
+      $.post(domain+"/validateConsolePassword", {password:password} ,async function(accessGranted){
+        if(accessGranted){
+          try {
+            await $.post(domain + "/revokeProUser",{users:selectedUsersForManipulation}, function(response) {
+              console.log(response);
+              if(response.successfull){
+                $('#user-info-dialog-details').html(`<b class="text-success">Operation Completed</b>`);
+                $('#user-info-dialog-details').append(`<p class="">Processed : ${(selectedUsersForManipulation.length - response.fails.length)} /  ${selectedUsersForManipulation.length} user(s)</p>`);
+                $('#user-info-dialog-details').append(`<p class="py-3"> <span onclick="prepareEmployeeInterface()" data-bs-dismiss="modal" class="btn btn-outline-accent btn-sm"> Reload Users <i class="bi bi-arrow-clockwise"></i></span> </p>`);  
+            //  $('#user-info-dialog-details').append(`<p class="py-3"> <span onlcick="resetConfirmDialogBody(${action})" class="btn btn-outline-acccent btn-sm"> Retry <i class="bi bi-arrow-clockwise"></i></span> </p>`);
+              }else{
+                $('#user-info-dialog-details').html(`<b class="text-success">Operation Completed with the Following Errors / Warnings</b>`);
+                $('#user-info-dialog-details').append(`<p class="">Failed to process : ${response.fails.length} user(s)</p>`);
+                $('#user-info-dialog-details').append(`<ul class="">`);
+                for (fail of response.fails){
+                  $('#user-info-dialog-details').append(`<li class=""> ${fail.username , " - " , fail.firstName} </li>`);
+                }
+                $('#user-info-dialog-details').append(`</ul>`);
+              }
+            })
+          } catch (error) {
+            $('#user-info-dialog-details').html(`<b class="text-danger">Operation Failed</b>`);
+            $('#user-info-dialog-details').append(`<p>Error: ${error.responseText}`);
+            $('#user-info-dialog-details').append(`${error.statusText}</p`);
+            console.log('Error in verify swwitch statement');
+            console.log(error);
+          }
+        }else{
+          $('#user-info-dialog-details').html(`<b class="text-danger">Wrong Password</b>`);
+          $('#user-info-dialog-details').append(`<p class="py-3"> <span onclick="resetConfirmDialogBody('${action}')" class="btn btn-outline-accent btn-sm"> Retry <i class="bi bi-arrow-clockwise"></i></span> </p>`);
+          
+          console.log('Invalid Admin Password');
+        }
+      });
       break;  
   case "delete":
       console.log("calling delete function");
+      $.post(domain+"/validateConsolePassword", {password:password} ,async function(accessGranted){
+        if(accessGranted){
+          try {
+            await $.post(domain + "/deleteUser",{users:selectedUsersForManipulation}, function(response) {
+              console.log(response);
+              if(response.successfull){
+                $('#user-info-dialog-details').html(`<b class="text-success">Operation Completed</b>`);
+                $('#user-info-dialog-details').append(`<p class="">Processed : ${(selectedUsersForManipulation.length - response.fails.length)} /  ${selectedUsersForManipulation.length} user(s)</p>`);
+                $('#user-info-dialog-details').append(`<p class="py-3"> <span onclick="prepareEmployeeInterface()" data-bs-dismiss="modal" class="btn btn-outline-accent btn-sm"> Reload Users <i class="bi bi-arrow-clockwise"></i></span> </p>`);  
+            //  $('#user-info-dialog-details').append(`<p class="py-3"> <span onlcick="resetConfirmDialogBody(${action})" class="btn btn-outline-acccent btn-sm"> Retry <i class="bi bi-arrow-clockwise"></i></span> </p>`);
+              }else{
+                $('#user-info-dialog-details').html(`<b class="text-success">Operation Completed with the Following Errors / Warnings</b>`);
+                $('#user-info-dialog-details').append(`<p class="">Failed to process : ${response.fails.length} user(s)</p>`);
+                $('#user-info-dialog-details').append(`<ul class="">`);
+                for (fail of response.fails){
+                  $('#user-info-dialog-details').append(`<li class=""> ${fail.username , " - " , fail.firstName} </li>`);
+                }
+                $('#user-info-dialog-details').append(`</ul>`);
+              }
+            })
+          } catch (error) {
+            $('#user-info-dialog-details').html(`<b class="text-danger">Operation Failed</b>`);
+            $('#user-info-dialog-details').append(`<p>Error: ${error.responseText}`);
+            $('#user-info-dialog-details').append(`${error.statusText}</p`);
+            console.log('Error in verify swwitch statement');
+            console.log(error);
+          }
+        }else{
+          $('#user-info-dialog-details').html(`<b class="text-danger">Wrong Password</b>`);
+          $('#user-info-dialog-details').append(`<p class="py-3"> <span onclick="resetConfirmDialogBody('${action}')" class="btn btn-outline-accent btn-sm"> Retry <i class="bi bi-arrow-clockwise"></i></span> </p>`);
+          
+          console.log('Invalid Admin Password');
+        }
+      });
       break;
   
     default:
@@ -298,22 +507,6 @@ async function confirmUserAction(evt) {
 }
 
 
-
-async function makeProUser(params) {
-  
-}
-
-async function revokeProUser(params) {
-  
-}
-
-async function verifyUser(params) {
-  
-}
-
-async function deverifyUser(params) {
-  
-}
 
 
 
@@ -349,6 +542,15 @@ async function filterUsersBy(evt){
       console.log("Error In Filtering Users List");
       break;
   }
+}
+
+
+async function filterUsersNameSearch(evt){
+  var searchText = $(evt).val().toLowerCase();
+  console.log(`searchText is: ${searchText}`);
+  var filteredUsers = [];
+  filteredUsers = await usersCache.filter(u => (u.username.toLowerCase().includes(searchText)));
+    renderEmployeeData(filteredUsers);
 }
 
 

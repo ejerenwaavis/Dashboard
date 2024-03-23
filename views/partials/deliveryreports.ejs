@@ -74,8 +74,9 @@
                         <td><span class=" " data="load" onclick="sortBy(this)">LOAD</span></td>
                         <td><span class=" " data="ofd" onclick="sortBy(this)">OFD</span></td>
                         <td><span class=" " data="pofd" onclick="sortBy(this)">POFD</span></td>
+                        <td><span class=" " data="prl" onclick="sortBy(this)">PRL</span></td>
                         <td><span class=" " data="del" onclick="sortBy(this)">DEL</span></td>
-                        <td><span class=" " data="attempts" onclick="sortBy(this)">ATTEMPTS</span></td>
+                        <td><span class=" " data="attempts" onclick="sortBy(this)">ATT</span></td>
                         <td><span class=" " data="mls" onclick="sortBy(this)">MLS</span></td>
                         <td>PROGRESS</td>
                         <td><span class=" " data="event" onclick="sortBy(this)">EVENT</span></td>
@@ -87,13 +88,13 @@
                 </tbody>
                 <tfoot >
                     <tr>
-                        <td id="sync-warning" class="d-none" colspan="10"><span class="text-danger opacity-75" style="color: red;">Driver
+                        <td id="sync-warning" class="d-none" colspan="11"><span class="text-danger opacity-75" style="color: red;">Driver
                                 Manifest has not yet been Synchrosnized with the Ontrac Server,
                                 Click "Pull Report" to Sync. [ <a class="link-primary">(<span id="driverLength" class=""
                                         onclick="showUploadedDrivers()"></span>)</a> ]</span></td>
                     </tr>
                     <tr id="driverPlaceHolder" class="d-none border-0 placeholder-wave ">
-                        <td colspan="10" class="opacity-75"><span class="placeholder col-12"> IC #</span></td>
+                        <td colspan="11" class="opacity-75"><span class="placeholder col-12"> IC #</span></td>
                     </tr>
                 </tfoot>
             </table>

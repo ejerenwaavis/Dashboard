@@ -18,6 +18,7 @@ let totalOFD = NaN;
 let selectedReportDateTime = (new Date().setHours(0,0,0,0));
 let globalTimer = 0;
 let mouseIsDown = false;
+let clientUser = null;
 
 window.onload = async (event) => {
   $("#deliveryReport-nav-button").click(); //simulates the show action for the nav tabls
@@ -25,6 +26,7 @@ window.onload = async (event) => {
   trackingResource2 = await getTrackingURL2();
   EXTRACTINGURL = await getExtractingURL();
   priorityBrands = await getPriorityBrands();
+  clientUser = await getClientUser();
   update = await pullLocalReport();
 };
 
@@ -218,6 +220,7 @@ async function displayReport(report, opts) {
     driverCount++;
     let ofd = [];
     let pofd = [];
+    let prl = [];
     let del = [];
     let mls = [];
     let pmls = [];
@@ -315,6 +318,7 @@ async function displayReport(report, opts) {
           let delivered = await isDelivered(stop);
           let attempted = await isAttempted(stop);
           let isInMLS = await isMLS(stop);
+          let isPRL = await isPrlStop(stop);
           let OFD = await isOFD(stop);
           if(stop.lastScan){ // this makes sure that only pieces that wew scanned are taken into consideration of displaying on delivered or attempts...e.t.c 
             if(delivered){
@@ -323,10 +327,14 @@ async function displayReport(report, opts) {
             }else if(OFD){
               totalOFD++;
               // console.log(stop);
-                if(stop.isPriority){
-                  pofd.push(stop);
+                if(isPRL){
+                  prl.push(stop);
                 }else{
-                  ofd.push(stop);
+                  if(stop.isPriority){
+                    pofd.push(stop);
+                  }else{
+                    ofd.push(stop);
+                  }
                 }
             }else if(attempted){
                 if(stop.isPriority){
@@ -403,6 +411,7 @@ async function displayReport(report, opts) {
         console.log(error);
         problemStops.push(stop);
       }
+      // eventCodes.problemStops.push(problemStops);
     } // End of Manifest Loop
 
     let loadNumber = ofd.length + attempts.length + del.length;
@@ -413,6 +422,7 @@ async function displayReport(report, opts) {
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="load" onclick="showDetailedStops(this)">'+(loadNumber)+'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="ofd" '+(ofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ ofd.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="pofd" '+(pofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ pofd.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="pofd" '+(prl.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ prl.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="del" '+(del.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ del.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0 '+(pattempts.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="attempts" '+((pattempts.length + attempts.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pattempts.length + attempts.length) +'</a></td>';
     html += '<td> <a class="btn p-0 m-0 '+(pmls.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="mls" '+((pmls.length + mls.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pmls.length + mls.length) +'</a></td>';
@@ -432,7 +442,7 @@ async function displayReport(report, opts) {
       $('#reportDetails tbody').prepend(quickHtml);
     }
     html="";
-    driverStatus.push({ _id:driver._id, driverName:driverName, date:driver.date, driverAllias:driver.driverAllias, driverNumber:driver.driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
+    driverStatus.push({ _id:driver._id, driverName:driverName, date:driver.date, driverAllias:driver.driverAllias, driverNumber:driver.driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, prl:prl, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
     if(isTodayReport(driver.date)){
       if(totalOnlineDriverPulls){
         saveIndividualDriverStatus(driver).then((res) => {
@@ -453,7 +463,7 @@ async function displayReport(report, opts) {
     console.log(eventCodes);
   }
   setTotalOFD(totalOFD, {updateWeekly:updateWeekly});
-  console.log(eventCodes);
+  // console.log(eventCodes);
   return {drivers:drivers, lastUpdated:new Date().toLocaleString()};
 }
 
@@ -493,6 +503,7 @@ async function displayOfflineReport(report, opts) {
     let del = [];
     let mls = [];
     let pmls = [];
+    let prl = [];
     let load = [];
     let attempts = [];
     let pattempts = [];
@@ -526,6 +537,7 @@ async function displayOfflineReport(report, opts) {
           // console.log(stop);
           let delivered = (stop.Events && stop.Events[0] != 404)? await isDelivered(stop) : (stop.lastScan === "Delivered");
           let attempted = (stop.Events && stop.Events[0] != 404)? await isAttempted(stop) : (stop.lastScan === "Attempted");
+          let isPRL = await isPrlStop(stop);
           let isInMLS = (stop.Events && stop.Events[0] != 404)? await isMLS(stop) : (stop.lastScan === "");
           let OFD = (stop.Events && stop.Events[0] != 404)? await isOFD(stop) : (stop.lastScan === "Loaded");
           if(stop.lastScan){ // this makes sure that only pieces that wew scanned are taken into consideration of displaying on delivered or attempts...e.t.c 
@@ -533,11 +545,14 @@ async function displayOfflineReport(report, opts) {
                 del.push(stop);
             }else if(OFD){
                 totalOFD ++;
-              // console.log(stop);
-                if(stop.isPriority){
-                  pofd.push(stop);
+                if(isPRL){
+                  prl.push(stop);
                 }else{
-                  ofd.push(stop);
+                  if(stop.isPriority){
+                    pofd.push(stop);
+                  }else{
+                    ofd.push(stop);
+                  }
                 }
             }else if(attempted){
                 if(stop.isPriority){
@@ -629,6 +644,7 @@ async function displayOfflineReport(report, opts) {
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="load" onclick="showDetailedStops(this)">'+(loadNumber)+'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="ofd" '+(ofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ ofd.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="pofd" '+(pofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ pofd.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="pofd" '+(prl.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ prl.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="del" '+(del.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ del.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0 '+(pattempts.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="attempts" '+((pattempts.length + attempts.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pattempts.length + attempts.length) +'</a></td>';
     html += '<td> <a class="btn p-0 m-0 '+(pmls.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="mls" '+((pmls.length + mls.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pmls.length + mls.length) +'</a></td>';
@@ -648,7 +664,7 @@ async function displayOfflineReport(report, opts) {
       $('#reportDetails tbody').prepend(quickHtml);
     }
     html="";
-    driverStatus.push({_id:driver._id, driverName:driverName, date:driver.date, driverAllias:driver.driverAllias, driverNumber:driver.driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
+    driverStatus.push({_id:driver._id, driverName:driverName, date:driver.date, driverAllias:driver.driverAllias, driverNumber:driver.driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, prl:prl, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}});
    
     
   } //End of Driver Loop
@@ -692,6 +708,8 @@ async function showDetailedStops(evt){
     stopArray = [...driver.manifest.pofd,...driver.manifest.ofd,...driver.manifest.del,...driver.manifest.pattempts,...driver.manifest.attempts];
   }else if (stopType == "del"){
     stopArray = driver.manifest.del;
+  }else if (stopType == "prl"){
+    stopArray = driver.manifest.prl;
   }else if (stopType == "attempts"){
     stopArray = [...driver.manifest.pattempts,...driver.manifest.attempts];
   }else if (stopType == "problemStops"){
@@ -886,6 +904,7 @@ async function fetchDriverUpdate(evt){
     let del = [];
     let mls = [];
     let pmls = [];
+    let prl = [];
     let load = [];
     let attempts = [];
     let pattempts = [];
@@ -897,10 +916,10 @@ async function fetchDriverUpdate(evt){
 
     // driver.driverName = driverName;
     var latestEvent = ((new Date((reportDateTime? reportDateTime :new Date()))).setHours(0,0,0,0));
-    let driverOFD = clientDeiverStatus[driverIndex].manifest.ofd.length + clientDeiverStatus[driverIndex].manifest.pofd.length
+    let driverOFD = clientDeiverStatus[driverIndex].manifest.ofd.length + clientDeiverStatus[driverIndex].manifest.pofd.length + clientDeiverStatus[driverIndex].manifest.prl.length
     totalOFD = totalOFD - driverOFD;
     //loop through all OFD'S and update
-    let deliverableStops = [...clientDeiverStatus[driverIndex].manifest.ofd,...clientDeiverStatus[driverIndex].manifest.pofd,
+    let deliverableStops = [...clientDeiverStatus[driverIndex].manifest.ofd,...clientDeiverStatus[driverIndex].manifest.pofd,...clientDeiverStatus[driverIndex].manifest.prl,
     ...clientDeiverStatus[driverIndex].manifest.attempts, ...clientDeiverStatus[driverIndex].manifest.pattempts,
     ...clientDeiverStatus[driverIndex].manifest.mls,...clientDeiverStatus[driverIndex].manifest.pmls]
     for await(stop of deliverableStops){
@@ -973,6 +992,7 @@ async function fetchDriverUpdate(evt){
 
           let delivered = await isDelivered(stop);
           let attempted = await isAttempted(stop);
+          let isPRL = await isPrlStop(stop);
           let isInMLS = await isMLS(stop);
           let OFD = await isOFD(stop);
           if(stop.lastScan){ // this makes sure that only pieces that wew scanned are taken into consideration of displaying on delivered or attempts...e.t.c 
@@ -981,10 +1001,14 @@ async function fetchDriverUpdate(evt){
             }else if(OFD){
               // console.log(stop);
               totalOFD ++;
-                if(stop.isPriority){
-                  pofd.push(stop);
+                if(isPRL){
+                  prl.push(stop);
                 }else{
-                  ofd.push(stop);
+                  if(stop.isPriority){
+                    pofd.push(stop);
+                  }else{
+                    ofd.push(stop);
+                  }
                 }
             }else if(attempted){
                 if(stop.isPriority){
@@ -1080,6 +1104,7 @@ async function fetchDriverUpdate(evt){
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driverNumber+'" stopType="load" onclick="showDetailedStops(this)">'+(loadNumber)+'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driverNumber+'" stopType="ofd" '+(ofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ ofd.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driverNumber+'" stopType="pofd" '+(pofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ pofd.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driverNumber+'" stopType="prl" '+(prl.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ prl.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driverNumber+'" stopType="del" '+(del.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ del.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0 '+(pattempts.length ? 'text-danger':'' )+'" driverNumber="'+driverNumber+'" stopType="attempts" '+((pattempts.length + attempts.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pattempts.length + attempts.length) +'</a></td>';
     html += '<td> <a class="btn p-0 m-0 '+(pmls.length ? 'text-danger':'' )+'" driverNumber="'+driverNumber+'" stopType="mls" '+((pmls.length + mls.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pmls.length + mls.length) +'</a></td>';
@@ -1097,7 +1122,7 @@ async function fetchDriverUpdate(evt){
     }
     html=""; 
      
-    clientDeiverStatus[driverIndex] = { _id:clientDeiverStatus[driverIndex]._id, driverName:driverName, date:clientDeiverStatus[driverIndex].date, driverAllias:clientDeiverStatus[driverIndex].driverAllias, driverNumber:driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}};
+    clientDeiverStatus[driverIndex] = { _id:clientDeiverStatus[driverIndex]._id, driverName:driverName, date:clientDeiverStatus[driverIndex].date, driverAllias:clientDeiverStatus[driverIndex].driverAllias, driverNumber:driverNumber, lastUpdated:latestEvent, manifest:{mls:mls, pmls:pmls, prl:prl, ofd:ofd, pofd:pofd, del:del, pattempts:pattempts, attempts:attempts, problemStops:problemStops}};
     // get the newly updated clientDriverDocument
     savableDriver = {_id:clientDeiverStatus[driverIndex]._id, driverName:driverName, date:clientDeiverStatus[driverIndex].date, driverAllias:clientDeiverStatus[driverIndex].driverAllias, driverNumber:driverNumber, lastUpdated:latestEvent, manifest:allManifest} // replace the savable manifest, with mongodb friendly manifest
     console.log(clientDeiverStatus[driverIndex]);
@@ -1131,6 +1156,7 @@ async function displayReportWithClientStauts(driverStatus){
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="load" onclick="showDetailedStops(this)">'+(loadNumber)+'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="ofd" '+(driver.manifest.ofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ driver.manifest.ofd.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="pofd" '+(driver.manifest.pofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ driver.manifest.pofd.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="prl" '+(driver.manifest.prl.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ driver.manifest.prl.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="del" '+(driver.manifest.del.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ driver.manifest.del.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0 '+(driver.manifest.pattempts.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="attempts" '+((driver.manifest.pattempts.length + driver.manifest.attempts.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (driver.manifest.pattempts.length + driver.manifest.attempts.length) +'</a></td>';
     html += '<td> <a class="btn p-0 m-0 '+(driver.manifest.pmls.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="mls" '+((driver.manifest.pmls.length + driver.manifest.mls.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (driver.manifest.pmls.length + driver.manifest.mls.length) +'</a></td>';
@@ -1334,6 +1360,18 @@ function getExtractingURL(){
 function getPriorityBrands() {
   return new Promise((resolve, reject) => {
     $.get(domain + '/getPriorityBrands', function(data) {
+      resolve(data);
+    }).fail(function(error) {
+      reject(error);
+    });
+  });
+}
+
+
+
+function getClientUser() {
+  return new Promise((resolve, reject) => {
+    $.get(domain + '/getClientUser', function(data) {
       resolve(data);
     }).fail(function(error) {
       reject(error);
@@ -1552,6 +1590,18 @@ async function isOFD(stop) {
   || stop.Events[0].EventCode === 'OD' 
   || (stop.Events[0].EventShortDescription ? stop.Events[0].EventShortDescription.includes('Out for delivery.') : false )){
     return true;
+  }else{
+    return false;
+  }
+}
+
+async function isPrlStop(stop){
+  if(stop.barcode && (stop.street || stop.name)){
+    if(stop.barcode.length > 15 && !(stop.barcode.includes("1LS") || stop.barcode.includes("D100") )){
+      return true;
+    }else{
+      return false;
+    }
   }else{
     return false;
   }
