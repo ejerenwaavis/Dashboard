@@ -143,6 +143,17 @@ userSchema.plugin(passportLocalMongoose);
 
 const User = userConn.model("User", userSchema);
 
+
+
+
+const contractorSchema = new mongoose.Schema({
+  _id: String,
+  name: String,
+  phone: Number,
+});
+
+const Contractor = userConn.model("Contractor", contractorSchema);
+
 /********* Configure Passport **************/
 passport.use(User.createStrategy());
 passport.serializeUser(function (user, done) {
@@ -1155,7 +1166,7 @@ app.route(APP_DIRECTORY + "/updateWeeklyReport")
 
 
 
-/****************** USER / EMPLOYEE OPERATIONS ***************** */
+/****************** USER / EMPLOYEE CONTRACTORS OPERATIONS ***************** */
 app.route(APP_DIRECTORY + "/getUsers")
   .get(async function (req, res) {
     if(req.isAuthenticated && req.user){
@@ -1366,10 +1377,25 @@ app.route(APP_DIRECTORY+"/revokeProUser")
 
 
 
+/* *********  CONTRACTORS *********** */
+app.route(APP_DIRECTORY + "/getContractors")
+  .get(async function (req, res) {
+    if(req.isAuthenticated && req.user){
+      if(req.user?.isProUser){
+          let contractors = await Contractor.find({},'-__v');
+          console.log("Found ", contractors?.length, " users");
+          res.send(contractors);
+      }else{
+        res.send({err:"ACCESS_DENIED", msg:"Admin Priviledge Required"})
+      }
+    }else{
+      res.redirect(APP_DIRECTORY + "/login")
+    }
+})
+
 
 
 /******** Getting Resources  ********/ 
-
 app.route(APP_DIRECTORY + "/getTURL")
   .get(function (req, res) {
     // console.error(outputDate() + " Hostname: "+req.hostname);

@@ -2383,21 +2383,39 @@ async function switchLoad(){
       if(result.successfull){
         body.html('<span class="text-success"> Updated Load Status Successfully</>')
         driverIndex = clientDeiverStatus.findIndex(d => d._id == mlsLoadForm[0].value);
+        
         console.log(driverIndex);
         stopIndex = clientDeiverStatus[driverIndex].manifest.mls.findIndex(s => s.barcode == mlsLoadForm[1].value);
-        console.log(driverIndex, "  --  " , stopIndex);
         
-        clientDeiverStatus[driverIndex].manifest.mls[stopIndex].lastScan === "Loaded";
-        
-
-        let removedItem = clientDeiverStatus[driverIndex].manifest.mls.splice(stopIndex, 1)[0];
-        clientDeiverStatus[driverIndex].manifest.ofd.push(removedItem);
-
+        if(stopIndex > -1){
+          console.log(driverIndex, "  --  " , stopIndex);
+          clientDeiverStatus[driverIndex].manifest.mls[stopIndex].lastScan = "Loaded";
+          
+          let removedItem = clientDeiverStatus[driverIndex].manifest.mls.splice(stopIndex, 1)[0];
+          clientDeiverStatus[driverIndex].manifest.ofd.push(removedItem);
+        }else if(stopIndex = -1){
+          console.log(driverIndex, "  --  " , stopIndex);
+          stopIndex = clientDeiverStatus[driverIndex].manifest.problemStops.findIndex(s => s.barcode == mlsLoadForm[1].value);
+          if(stopIndex != -1){
+            clientDeiverStatus[driverIndex].manifest.problemStops[stopIndex].lastScan = "Loaded";
+            
+            let removedItem = clientDeiverStatus[driverIndex].manifest.problemStops.splice(stopIndex, 1)[0];
+            clientDeiverStatus[driverIndex].manifest.ofd.push(removedItem);
+          }else{
+            console.log("Could not find stop in local cache");
+          }
+        }
         // let combinedStopArray = clientDeiverStatus.manifest.map(obj => obj.values).reduce((acc, val) => acc.concat(val), []);
         // clientDeiverStatus.manifest = combinedStopArray;
 
         // displayReport(clientDeiverStatus, {updateWeekly:false} );
-        prepareMLSReportnterface();
+        prepareMLSReportnterface(); // refresh the mls report
+
+        //automatically close the modal
+        setTimeout(() => {
+          $('#addToLoadDialog').find('.btn-close')[0].click();
+        }, 350);
+
       }else{
         $("#switchLoadButton").removeClass("disabled")
         body.html('<span class="text-danger"> Failed to Update Load Status : ' + result.err+'</>')

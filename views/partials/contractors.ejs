@@ -1,0 +1,106 @@
+<section id="contractorsInformation" >
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-end">
+        <div class="">
+            <h6 class="placard-title text-mute col">CONTRACTORS</h6>
+        </div>
+        <div class="py-2">
+            <button onclick="prepareContractorsInterface()" class="btn btn-sm btn-secondary">Refresh List <i class="fas fa-sync-alt"></i></button>
+            <button class="btn btn-sm btn-secondary">Update Contractor <i class="fas fa-user-plus"></i></button>
+        </div>
+       
+    </div>
+</div>
+
+
+
+<div class="placard p-3 rounded shadow">
+
+    <div class="my-4">
+        <div class="container">
+            <div id="contractorsData" class="d-none"></div>
+
+            <div class="my-2">
+                <div class="mt-2">
+                    <div class="row g-3">
+                        
+                        <div class="col-auto">
+                            <label for="contractor-search" class="visually-hidden"> </label>
+                            <input type="text" class="form-control" onkeyup="filterContractorsNameSearch(this)" id="contractor-search"
+                            placeholder="Search Contractors">
+                        </div>
+                        <div class="col-auto">
+                            <div class="d-inline">
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item btn" data="contractor-number" onclick="sortUsersBy(this)">IC Number</a></li>
+                                    <li><a class="dropdown-item btn" data="name" onclick="sortUsersBy(this)">Name</a></li>
+                                    <li><a class="dropdown-item btn" data="Phone" onclick="sortUsersBy(this)" id="" >Phone</a></li>
+                                    <li><a class="dropdown-item btn" data="link" onclick="sortUsersBy(this)" id="" >Link</a></li>
+                                </ul>
+                                <button type="" role="button" data-bs-toggle="dropdown" aria-expanded="false" class="btn btn-outline-secondary mb-3"><i class="bi bi-sort-alpha-down"></i></button>
+                            </div>
+                        </div>
+                        <!-- <div class="col-auto ms-auto">
+                            <span onclick="performBulkAction(this)" actionMsg="verified" action="verify" class="btn pb-2 mx-1"><i class="bi bi-person-up text-success fs-4"></i></span>
+                            <span onclick="performBulkAction(this)" actionMsg="deverified" action="deverify" class="btn pb-2 mx-1"><i class="bi bi-person-slash text-warning fs-4"></i></span>
+                            <span onclick="performBulkAction(this)" actionMsg="deleted" action="delete" class="btn pb-2 mx-1"><i class="bi bi-person-x text-danger fs-4"></i></span>
+                            <span class="btn pb-2 mx-1"><i class="bi bi-three-dots-vertical fs-4"></i></span>
+
+                        </div> -->
+                    </div>
+                    <div class="table-responsive">
+                        <table id="contractors-list" class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th scope="col" data="contractor-number" onclick="sortContractorsBy(this)" >IC Number</th>
+                                    <th scope="col" data="name" onclick="sortContractorsBy(this)" >Name</th>
+                                    <th scope="col" data="phone" onclick="sortContractorsBy(this)">Phone</th>
+                                    <th scope="col" data="link" onclick="sortContractorsBy(this)">Link</th>
+                                </tr>
+                            </thead>
+                            <!-- Data -->
+                            <form id="contractors-form">
+                                <tbody>
+                                </tbody>
+                            </form>
+                        </table>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+</div>
+
+
+</section>
+
+
+
+
+<div class="modal fade" id="contractors-info-dialog" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-labelledby="contractors-info-dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contractors-info-dialog-tittle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center" id="">
+                    <div class="container-fluid" id="contractors-info-dialog-details">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-accent rounded" action="" id="contractorsConfirmBtn"
+                    onclick="confirmContractorsAction(this)">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="<%= body.publicFolder %>js/contractors.js" type="text/javascript"></script>
