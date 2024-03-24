@@ -59,6 +59,7 @@ const fs = require("fs");
 const path = require("path");
 const Excel = require('exceljs');
 const formidable = require('formidable');
+const multer = require('multer');
 const mongoose = require("mongoose");
 
 const session = require("express-session");
@@ -67,7 +68,7 @@ const passportLocalMongoose = require("passport-local-mongoose");
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 
-// Configure app to user EJS abd bodyParser
+// Configure app to user EJS and bodyParser
 app.set("view engine", "ejs");
 app.use(express.static(__dirname+"/public"));
 app.use(express.static(tempFilePath));
@@ -78,6 +79,27 @@ app.use(bodyParser.urlencoded({
   limit: '50mb',
   parameterLimit: 2000000,
 }));
+
+
+
+
+/* ******** SETTING UP MTLTER   ********* */
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // Save files to the temp folder
+    cb(null, tempFilePath);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique file name
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// Create multer instance
+const upload = multer({ storage: storage });
+
+
 
 
 /******************** Authentication Setup & Config *************/
@@ -148,8 +170,10 @@ const User = userConn.model("User", userSchema);
 
 const contractorSchema = new mongoose.Schema({
   _id: String,
+  driverNumber: String,
   name: String,
   phone: Number,
+  link: String,
 });
 
 const Contractor = userConn.model("Contractor", contractorSchema);
@@ -773,8 +797,8 @@ app.route(APP_DIRECTORY + "/getDriverReport")
     // yesterday = new Date(today).setDate(3); // Remove before publshing - Fetches the previous days report
     // today = yesterday; // Remove before publshing - Fetches the previous days report
     console.error("getting Todays Report Automatically ", today);
-    
-    
+  
+
     let report = await DriverReport.find({date:today},'-__v');
     
 
@@ -1383,7 +1407,7 @@ app.route(APP_DIRECTORY + "/getContractors")
     if(req.isAuthenticated && req.user){
       if(req.user?.isProUser){
           let contractors = await Contractor.find({},'-__v');
-          console.log("Found ", contractors?.length, " users");
+          console.log("Found ", contractors?.length, " Contractors");
           res.send(contractors);
       }else{
         res.send({err:"ACCESS_DENIED", msg:"Admin Priviledge Required"})
@@ -1443,25 +1467,17 @@ app.route(APP_DIRECTORY + "/getPriorityBrands")
 
 
 app.route(APP_DIRECTORY + "/getDriverName/:driverNumber")
-  .get(function (req, res) {
-    driver = (contractors.filter((c) => c.driverNumber === req.params.driverNumber))[0];
-    res.send(driver ? driver : {driverNumber:req.params.driverNumber, name:"** - "+req.params.driverNumber});
+  .get(async function (req, res) {
+    result = await getDriverName(req.params.driverNumber); 
+    res.send(result);
 })
 
 
 app.route(APP_DIRECTORY + "/getContractorsList")
-  .get(function (req, res) {
-    res.send(contractors);
+  .get(async function (req, res) {
+    list = await Contractor.find({},"-__v");
+    res.send(list);
 })
-
-
-// app.route(APP_DIRECTORY + "/error")
-//   .get(async function (req, res) {
-//     throwFalseError();
-//     res.send("error thrown! did you get it?");
-// })
-
-
 
 
 
@@ -1479,6 +1495,50 @@ try{
     // Error case
     console.error('Error:', error);
 }
+
+
+
+
+
+
+/* ************ FILE OPERATIONS *************** */
+//save file to temp folder
+app.post(APP_DIRECTORY + "/contractorsListUpload", upload.single('contractorsList'), function (req, res) {
+    if (req.isAuthenticated()) {
+        let uploaded = req.file;
+
+        getContractorsFromExcelDocument(uploaded.path).then(async function (data) {
+          // console.log(data);
+          if (data != "Error Getting Data" ){
+              if(data.contractors.length > 0 ){
+                let contractors = data.contractors;
+                let errors = data.errors;
+                // console.log(reportSummary);
+                // console.log(report);
+                console.log("Updating Contractors List ... ");
+                // let newUpdates = [];
+                // let newBrandsAdded = [];
+                // let allBrandsFound = [];
+                // var processedItem = 0;
+
+                processContractorUpdates(contractors).then(result => {
+                    // console.log(result);
+                  res.send(result)
+                }).catch(err => {
+                  console.log(err);
+                  res.send({err:err, errMsg:"FAILED_TO_PROCESS_UPDATE" })
+                })
+            }else{
+              console.log("FAILED_TO_READ_FILE_DATA");
+                res.send({err:err, errMsg:"FAILED_TO_READ_FILE_DATA", msg:"Failed to REad file, double check that you are uploadinig the right EXCELL Document." })
+            }
+          }     
+        });
+    }else{
+      console.log("Unauthenticated Request");
+      res.send({err:"UNAUTHENTICATED_REQUEST"})
+    }
+  });
 
 
 
@@ -1660,105 +1720,74 @@ async function getData(filePath, options) {
 
 
 // promise that returns an array of JSON Brands [{brandName, [tracking #1, tracking #1]}];
-function getBrandsFromExcelDocument(filePath) {
-  return new Promise(function (resolve, reject) {
+async function getContractorsFromExcelDocument(filePath) {
+  return new Promise(async function (resolve, reject) {
     var data = {};
-    // var allbrands = [];
-    var brands = [];
-    var report = [];
-    reportSummary = {};
+    var contractors = [];
+    var errors = [];
+    var report = {};
     var workbook = new Excel.Workbook();
     var totalRows = 0;
 
-    workbook.xlsx.readFile(filePath).then(function () {
+    await workbook.xlsx.readFile(filePath).then(async function () {
       var worksheet = workbook.getWorksheet(1);
       var headerRow = worksheet.getRow(1)
-      var customerCell;
-      var barcodeCell;
+      var driverNumberCell;
+      var driverNameCell;
+      var phoneCell;
 
-      headerRow.eachCell(function(cell, colNumber) {
-        if((cell.value).toLowerCase() === "customer"){
-          customerCell = colNumber
-        }
-
-        if((cell.value).toLowerCase() === "barcode"){
-          barcodeCell = colNumber
+      await headerRow.eachCell(function(cell, colNumber) {
+        
+        if((cell.value).toLowerCase() === "contractor code"){
+          driverNumberCell = colNumber
+          // console.log("Found IC Cell : ", driverNumberCell );
         }
         
+        if((cell.value).toLowerCase() === "name"){
+          driverNameCell = colNumber
+          // console.log("Name Cell : ", driverNameCell );
+        }
+        
+        if((cell.value).toLowerCase() === "cell #"){
+          phoneCell = colNumber
+          // console.log("Found Phone column : ", phoneCell );
+        }
       });
       
-      // console.log('Barcode Cell is:  ' + barcodeCell + ' ||  Customer Cell is:  ' + customerCell);
 
       let i = 2;
-      let brandCount = 0;
+      let contractorCount = 0;
       totalRows = worksheet.rowCount;
-      reportSummary.totalRead = totalRows;
+      report.totalRead = totalRows;
 
 
-    if(barcodeCell && customerCell){
-      worksheet.eachRow(function (row, rowNumber) {
-        // console.log('Row ' + rowNumber + ' = ' + JSON.stringify(row.values));
-        let tracking = row.getCell(barcodeCell) + "";
-        let trackingPrefix = tracking.substring(0,7);
-        let brandName = row.getCell(customerCell) + "";
-        // let searchResult = brands.filter(function(b) { return b.brandName === brandName; });
-        let searchResult = allBrands.find(e => e._id === brandName);
-        // console.log(brandName +" -- "+ trackingPrefix);
-        
-        if (searchResult) {
-          var includesTrackingPrefix = searchResult.trackingPrefixes.includes(trackingPrefix);
-          if(!includesTrackingPrefix){
-            searchResult.trackingPrefixes.push(trackingPrefix);
-            brands.push(searchResult);
-            report.push({brand: brandName, tracking: trackingPrefix, action: "~ New Prefix"});
-            console.log("new prefix for "+brandName+"  --> '"+ trackingPrefix +"' added for data Collection");
+      if(driverNumberCell && driverNameCell){
+        await worksheet.eachRow(async function (row, rowNumber) {
+          // console.log('Row ' + rowNumber + ' = ' + JSON.stringify(row.values));
+          if(rowNumber > 1){
+            let driverNumber = row.getCell(driverNumberCell).value;
+            let driverName = row.getCell(driverNameCell).value;
+            let phone = await Number((row.getCell(phoneCell).value).replace(/[- ]/g, ''));
+            
+            if((driverName && driverNumber)){
+              contractors.push(new Contractor({_id:driverNumber, driverNumber:driverNumber, name:driverName, phone:phone}));
+            }else{
+              errors.push({rowNumber: rowNumber, msg: 'missing vital details'});
+            }
           }
-        }else{
-          // console.log(".... FOUND NEW BRAND ...")
-          brands.push({_id: brandName, trackingPrefixes:[trackingPrefix]});
-          report.push({brand: brandName, tracking: trackingPrefix, action: "+ New Brand"});
-          brandCount++;
-          // console.log(searchResult);
-          // console.log("brands array length => " + searchResult.length);
-          // console.log("Searched Brand Includes Tracking? " +brands[brandCount].trackingPrefix.includes(tracking));
-          // console.log("Searched Brand Includes TrackingPrefix? " +brands[brandCount].trackingPrefix.includes(trackingPrefix));
-        }
-      });
-    }else{
-      reject("Unable to determine Customer Columm or Barcode Columm");
-    }
-
-      
-
-      if (brands) {
-        reportSummary.totalBrands = brands.length;
-        // console.log("Data Processing Done . . . ");
-        // console.log("BrandCounter = " + brandCount);
-        // console.log("Total Rows Read: " + totalRows);
-        // console.log("New Brands = " + brands.length);
-
-        // console.log("Will Not RESOLVE GetBrands from Excell -- developmenet + ");
-        resolve({brands: brands, report: report, reportSummary});
-        
-        // res.redirect(APP_DIRECTORY + "/brandsUpload")
-      } else {
-        // res.redirect(APP_DIRECTORY + "/")
-        // console.log("Total Brand Count = " + brandCount);
-        // console.log("Wont REJECT either GetBrands from Excell -- developmenet + ");
-        reject("Error Getting Data");
+        });
+      }else{
+        errors.push({err:"FAILED_TO_READ_HEADERS", msg:"Unable to determine Customer Columm or Barcode Columm"});
       }
 
-      i++;
-      // console.log(JSON.stringify(address));
+    
 
-
-
-      // return workbook.xlsx.writeFile(tempFilePath + "legacyNew.xlsx");
+      if (contractors.length) {
+        resolve({contractors: contractors, errors: errors});
+      } else {
+        reject("Error Getting Data");
+      }
     })
-
-
-   
-
   });
 }
 
@@ -2038,7 +2067,7 @@ async function clearTempFolder(){
   }else{
     // console.error(files);
     for (const file of files) {
-      if(file.startsWith("R4M") || file.startsWith("RW") || file.startsWith("brands.txt")){
+      if(file.startsWith("R4M") || file.startsWith("RW") || file.startsWith("contractorsList") || file.startsWith("brands.txt")){
         fs.unlink(path.join(tempFilePath, file), (err) => {
           if (err) throw err; 
         });
@@ -2085,6 +2114,30 @@ async function cacheReports(){
       }
     });
 }
+
+async function processContractorUpdates(contractors){
+  return new Promise(async (resolve,reject) => {
+    await Contractor.deleteMany({}).then(function (result) {
+      console.log(result);
+
+      //save the list of contractors here
+      Contractor.insertMany(contractors)
+        .then((docs) => {
+          console.log('Documents saved successfully');
+          resolve({msg:'Documents Updated', docs:docs})
+        })
+        .catch((error) => {
+          console.error({msg:'Error saving documents:', error:"FAILED_TO_SAVE_NEW_DOCS\n", err:error});
+          reject({msg:'Error saving documents:', error:"FAILED_TO_SAVE_NEW_DOCS\n", err:error})
+        });
+        
+      }).catch((err) => {
+        console.log("Error occureled while deleteing");
+        reject({msg:'Error saving documents:', error:"FAILED_TO_DELETE_OLD_DOCS\n", err:err})
+      });
+  })
+}
+
 
 async function processBrandUpdates(brands){
   return new Promise((resolve,reject) => {
@@ -2329,7 +2382,7 @@ async function isPriority(brandName) {
 }
 
 async function getDriverName(driverNumber){
-    driver = await (contractors.filter((c) => c.driverNumber.toString() === driverNumber.toString()))[0];
+    driver = await Contractor.findOne({_id:driverNumber});
     driverNumberStr = "" + driverNumber;
     return (driver ?  driver.name : "***" + driverNumberStr.substring(3));
 }

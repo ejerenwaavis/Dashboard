@@ -1316,7 +1316,7 @@ function getContractorsList() {
   return new Promise((resolve, reject) => {
     let name = "";
     $.get(domain + '/getContractorsList/', function(data) {
-      resolve(data.name);
+      resolve(data);
     }).fail(function(error) {
       reject(error);
     });
@@ -2086,7 +2086,7 @@ async function extractMail(opts){
               response.errors.forEach(element => {
                 $('#infoDialogDetails').append('<p>Sender: '+element?.sender+' | Msg: '+element?.message+'</p>')
               });
-              $('#infoDialogDetails').append('<p> <a class="btn btn-outline-accent" onclick="refreshPage()"> Reload <i class="bi bi-arrow-clockwise"></i></a></p>');
+              $('#infoDialogDetails').append('<p> <a class="btn btn-outline-accent" onclick="pullLocalReport()"> Reload <i class="bi bi-arrow-clockwise"></i></a></p>');
             }
             console.log("EXTRACTION COMPLETED");
             $("#totalOFD").html("Extraction Completed. Total Drivers:."+ response.driverCount);
@@ -2156,7 +2156,7 @@ async function checkAndUpdateExtractionStatus(){
       }else{
         $('#infoDialogDetails').html('<p>Extraction Completed</p>');
         $('#infoDialogDetails').append('<p> Click the button below to reload the updated offline report</b></p>');
-        $('#infoDialogDetails').append('<p> <a class="btn btn-accent" onclick="pullLocalReport()"> Display Updated Report <i class="bi bi-arrow-clockwise"></i></a></p>');
+        $('#infoDialogDetails').append('<p> <a class="btn btn-accent" data-bs-dismiss="modal" onclick="pullLocalReport()"> Display Updated Report <i class="bi bi-arrow-clockwise"></i></a></p>');
       }
     });
   } catch (error) {

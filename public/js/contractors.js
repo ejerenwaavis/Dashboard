@@ -23,8 +23,8 @@ function renderContractorsData(data) {
   data.forEach(function(contractor) {
       const row = `
           <tr>
-              <td class="text-start">${contractor.driverNumber}</td>
-              <td class="text-start">${contractor.namel}</td>
+              <td class="text-start">${contractor._id}</td>
+              <td class="text-start">${contractor.name}</td>
               <td class="text-start">${contractor.phone}</td>
               <td class="text-center">${contractor.link? '<i class="bi bi-shield-fill-check text-success fs-4"></i>' : '<i class="bi bi-shield-fill-exclamation text-danger fs-4"></i>'}</td>
               <td class="text-center">
@@ -128,7 +128,7 @@ function resetContractorConfirmDialogBody(action){
 }
 
 
-async function confirmUserAction(evt) {
+async function confirmContractorAction(evt) {
   let btn = $(evt);
   action = btn.attr("action");
   password = $("#adminConsolePassword").val();
@@ -274,7 +274,7 @@ async function filterContractorssBy(evt){
 }
 
 
-async function filterUsersNameSearch(evt){
+async function filterContractorsNameSearch(evt){
   var searchText = $(evt).val().toLowerCase();
   console.log(`searchText is: ${searchText}`);
   var filteredContractors = [];
@@ -289,48 +289,67 @@ async function sortContractorsBy(evt){
   var action = $(evt);
   var sortBy = action.attr('data');
   
-  var tempUserCache = usersCache;
+  var tempContractorsCache = contractorsCache;
 
-  if(filteredUsers.length > 0){
-    tempUserCache  = filteredUsers.slice();
+  if(filteredContractors.length > 0){
+    tempContractorsCache  = filteredContractors.slice();
     // console.log("reassigned tempUsersCache to: ");
     // console.log(tempUserCache);
   }
 
   switch (sortBy) {
     case 'contractor-number':
-        tempSortArray = tempUserCache.slice();
-        await tempUserCache.reverse();
-        if(arraysAreIdentical(tempUserCache,tempSortArray)){
-          await tempUserCache.reverse();
-          renderContractorsData(tempUserCache);
+        tempSortArray = tempContractorsCache.slice();
+        await tempContractorsCache.sort(function (a,b){
+          aVal = Number(a._id);
+          bVal = Number(b._id);
+          if (a > b) {
+            // console.log("greater than");
+            return 1;   
+          }else if (a < b){
+            // console.log("less than");
+            return -1;
+          }else{
+            // console.log("equals");
+            return 0;
+          }
+        });
+        if(arraysAreIdentical(tempContractorsCache,tempSortArray)){
+          await tempContractorsCache.reverse();
+          renderContractorsData(tempContractorsCache);
         }else{
-          renderContractorsData(tempUserCache);
+          renderContractorsData(tempContractorsCache);
         }
       break;
     case 'name':
-        tempSortArray = tempUserCache.slice();
-        await tempUserCache.sort(function (a,b){
-          if (a.isProUser > b.isProUser) {
+        tempSortArray = tempContractorsCache.slice();
+        await tempContractorsCache.sort(function (a,b){
+          if (a.name[0] > b.name[0]) {
               return 1;   
-          }else if (a.isProUser < b.isProUser){
+          }else if (a.name[0] < b.name[0]){
               return -1;
           }else{
+            if (a.name[1] > b.name[1]) {
+                return 1;   
+            }else if (a.name[1] < b.name[1]){
+                return -1;
+            }else{
               return 0;
+            }
           }
         });   
-        if(arraysAreIdentical(tempUserCache,tempSortArray)){
-          await tempUserCache.reverse();
-          renderContractorsData(tempUserCache);
+        if(arraysAreIdentical(tempContractorsCache,tempSortArray)){
+          await tempContractorsCache.reverse();
+          renderContractorsData(tempContractorsCache);
         }else{
-          renderContractorsData(tempUserCache);
+          renderContractorsData(tempContractorsCache);
         }
       break;
     case 'link':
-        tempSortArray = tempUserCache.slice();
-        await tempUserCache.sort(function (a,b){
-          var aValue = a.verified ? 1 : 0;
-          var bValue = b.verified ? 1 : 0;
+        tempSortArray = tempContractorsCache.slice();
+        await tempContractorsCache.sort(function (a,b){
+          var aValue = a.link ? 1 : 0;
+          var bValue = b.link ? 1 : 0;
           if ( aValue > bValue) {
               return 1;   
           }else if (aValue < bValue){
@@ -339,11 +358,11 @@ async function sortContractorsBy(evt){
               return 0;
           }
         });
-        if(arraysAreIdentical(tempUserCache,tempSortArray)){
-          await tempUserCache.reverse();
-          renderContractorsData(tempUserCache);
+        if(arraysAreIdentical(tempContractorsCache,tempSortArray)){
+          await tempContractorsCache.reverse();
+          renderContractorsData(tempContractorsCache);
         }else{
-          renderContractorsData(tempUserCache);
+          renderContractorsData(tempContractorsCache);
         }
       break;
   
@@ -354,33 +373,64 @@ async function sortContractorsBy(evt){
 }
 
 
+/************* CONTRACTOR UPLOAD  ************** */
+function showUploadInterface(){
+  uploadModal = $("#contractors-info-dialog");
+  uploadModal.find(".modal-title").text("Upload Contractors List.XLSX");
+  body = uploadModal.find(".modal-body");
 
-/************** HELPER FUNCTIONS ************ */
+  body.html("<div class='py-3'><p><b>Upload the excell file gotten from dispatch.</b></p></div>");
+  body.append("<div class='px-3 py-2 text-center feedback'></div>");
+  body.append("<div class='col-8 offset-2'><input type='file' class='form-control' name='contractorsList' id='contractorListFile'/></div>");
+
+  actionButton = uploadModal.find('.modal-action');
+  actionButton.text("Upload File")
+  actionButton.attr("onclick","uploadContractorsFile()");
+  
+  showModal('#'+uploadModal.attr('id'));
+}
 
 
-// Function to compare arrays of objects
-function arraysAreIdentical(arr1, arr2) {
-    if (arr1.length !== arr2.length) {
-        return false;
-    }
-    
-    for (var i = 0; i < arr1.length; i++) {
-        var obj1 = arr1[i];
-        var obj2 = arr2[i];
-        
-        // Compare object properties
-        for (var prop in obj1) {
-            if (obj1[prop] !== obj2[prop]) {
-                return false;
-            }
-        }
-    }
-    
-    return true;
+async function uploadContractorsFile () {
+  fileInput = $("#contractorListFile")[0];
+  file = fileInput.files[0];
+  feedback = $("#contractors-info-dialog").find(".feedback");
+
+  if (!file) {
+      feedback.html(`<p class="text-danger">No files Selected</p>`);
+      feedback.fadeOut(500);
+      return;
+  }
+
+  
+  var formData = new FormData();
+  formData.append('contractorsList', file);
+
+  await $.ajax({
+      url: domain + '/contractorsListUpload',
+      type: 'POST',
+      data: formData,
+      processData: false, // Prevent jQuery from processing the data
+      contentType: false, // Prevent jQuery from setting content type
+      success: function(response) {
+          console.log(response);
+          if(response.err){
+            feedback.text("Update FAILED, try again, if error persist contact support").show().fadeOut(3000);
+          }else{
+            feedback.html(`<p class="text-success">Update Successfull</p>`).show().fadeOut(5000);
+          }
+        },
+        error: function(error) {
+          // Handle errors
+          feedback.text("Update FAILED, try again, if error persist contact support").show().fadeOut(3000);
+          console.error('There was a problem with your fetch operation:', error);
+      }
+  });
 }
 
 
 
+/************** HELPER FUNCTIONS ************ */
 // Main function to prepare the employee interface
 
 async function prepareContractorsInterface() {
@@ -393,4 +443,11 @@ async function prepareContractorsInterface() {
   } catch (error) {
     console.error('Error fetching employee data:', error);
   }
+}
+
+function showModal(id) {
+  const modal = new bootstrap.Modal(id, {
+    keyboard: true
+  })
+  modal.show();
 }

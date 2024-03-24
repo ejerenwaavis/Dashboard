@@ -6,7 +6,7 @@
         </div>
         <div class="py-2">
             <button onclick="prepareContractorsInterface()" class="btn btn-sm btn-secondary">Refresh List <i class="fas fa-sync-alt"></i></button>
-            <button class="btn btn-sm btn-secondary">Update Contractor <i class="fas fa-user-plus"></i></button>
+            <button class="btn btn-sm btn-secondary" onclick="showUploadInterface()">Update Contractor <i class="fas fa-user-plus"></i></button>
         </div>
        
     </div>
@@ -56,6 +56,8 @@
                                     <th scope="col" data="name" onclick="sortContractorsBy(this)" >Name</th>
                                     <th scope="col" data="phone" onclick="sortContractorsBy(this)">Phone</th>
                                     <th scope="col" data="link" onclick="sortContractorsBy(this)">Link</th>
+                                    <th scope="col" data="*" onclick="sortContractorsBy(this)">&nbsp;</th>
+                                    <th scope="col" data="*" onclick="sortContractorsBy(this)">&nbsp;</th>
                                 </tr>
                             </thead>
                             <!-- Data -->
@@ -88,15 +90,15 @@
                 <h5 class="modal-title" id="contractors-info-dialog-tittle"></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="text-center" id="">
+            <div class="modal-body text-center">
+                <div class="" id="">
                     <div class="container-fluid" id="contractors-info-dialog-details">
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-accent rounded" action="" id="contractorsConfirmBtn"
+                <button type="button" class="btn btn-secondary modal-close" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-accent rounded modal-action" action="" id="contractorsConfirmBtn"
                     onclick="confirmContractorsAction(this)">Confirm</button>
             </div>
         </div>
