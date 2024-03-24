@@ -1406,7 +1406,7 @@ app.route(APP_DIRECTORY + "/getContractors")
   .get(async function (req, res) {
     if(req.isAuthenticated && req.user){
       if(req.user?.isProUser){
-          let contractors = await Contractor.find({},'-__v');
+          let contractors = await Contractor.find({},);
           console.log("Found ", contractors?.length, " Contractors");
           res.send(contractors);
       }else{
