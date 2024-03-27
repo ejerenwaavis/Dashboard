@@ -422,7 +422,7 @@ async function displayReport(report, opts) {
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="load" onclick="showDetailedStops(this)">'+(loadNumber)+'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="ofd" '+(ofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ ofd.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="pofd" '+(pofd.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ pofd.length +'</a></td>';
-    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="pofd" '+(prl.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ prl.length +'</a></td>';
+    html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="prl" '+(prl.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ prl.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0" driverNumber="'+driver.driverNumber+'" stopType="del" '+(del.length? 'onclick="showDetailedStops(this)"' : '')+'>'+ del.length +'</a></td>';
     html += '<td> <a class="btn p-0 m-0 '+(pattempts.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="attempts" '+((pattempts.length + attempts.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pattempts.length + attempts.length) +'</a></td>';
     html += '<td> <a class="btn p-0 m-0 '+(pmls.length ? 'text-danger':'' )+'" driverNumber="'+driver.driverNumber+'" stopType="mls" '+((pmls.length + mls.length)? 'onclick="showDetailedStops(this)"' : '')+'>'+ (pmls.length + mls.length) +'</a></td>';
@@ -2080,7 +2080,7 @@ async function extractMail(opts){
   try {
         await $.get(EXTRACTINGURL+selectedExtractionDateTime, function (response) {
           if(response?.successfull){
-            $('#infoDialogDetails').html('<p>Extraction Succesfull. </p> <p>Total Drivers: '+response.driverCount+'</p>');
+            $('#infoDialogDetails').html('<p class="text-success">Extraction Succesfull.</p> <p>Total Drivers: '+response.driverCount+'</p>');
             if(response.errors){
               $('#infoDialogDetails').append('<b>Errors</b>')
               response.errors.forEach(element => {
@@ -2089,7 +2089,7 @@ async function extractMail(opts){
               $('#infoDialogDetails').append('<p> <a class="btn btn-outline-accent" onclick="pullLocalReport()"> Reload <i class="bi bi-arrow-clockwise"></i></a></p>');
             }
             console.log("EXTRACTION COMPLETED");
-            $("#totalOFD").html("Extraction Completed. Total Drivers:."+ response.driverCount);
+            $("#totalOFD").html("<span class='text-success'>Extraction Completed. Total Drivers: "+ response.driverCount + "</span>");
               setTimeout(() => {
                 $("#totalOFD").html(totalOFD);
               }, 7000);
@@ -2123,7 +2123,7 @@ async function extractMail(opts){
     if(error.status == 0){
       $('#infoDialogDetails').html('<p>Extraction is taking a little longer but is In Progress. </p>');
       $('#infoDialogDetails').append('<p> Continue to hold on and click "Check Status" in another 2 mins</p>');
-      $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
+      $('#infoDialogDetails').append('<p> <a class="button btn btn-outline-accent" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
     }else{
       $('#infoDialogDetails').html('<p>Encountered the folllowing error(s). </p>');
       $('#infoDialogDetails').append('<p> '+ JSON.stringify(error) +'</p>');
@@ -2152,9 +2152,9 @@ async function checkAndUpdateExtractionStatus(){
       if(!done){
           $('#infoDialogDetails').html('<p>Extraction is In Progress. </p>');
           $('#infoDialogDetails').append('<p> Continue to hold on and click "Check Status" in another 2mins</p>');
-          $('#infoDialogDetails').append('<p> <a class="button" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
+          $('#infoDialogDetails').append('<p> <a class="button btn btn-outline-accent" onclick="checkAndUpdateExtractionStatus()"> Check Status <i class="bi bi-arrow-clockwise"></i></a></p>');
       }else{
-        $('#infoDialogDetails').html('<p>Extraction Completed</p>');
+        $('#infoDialogDetails').html('<p class="text-success">Extraction Completed</p>');
         $('#infoDialogDetails').append('<p> Click the button below to reload the updated offline report</b></p>');
         $('#infoDialogDetails').append('<p> <a class="btn btn-accent" data-bs-dismiss="modal" onclick="pullLocalReport()"> Display Updated Report <i class="bi bi-arrow-clockwise"></i></a></p>');
       }
